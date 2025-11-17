@@ -1,36 +1,200 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Podcast Assistant
 
-## Getting Started
+An AI-powered SaaS platform that transforms podcast audio/video files into actionable content including transcripts, summaries, social posts, key moments, titles, and hashtags.
 
-First, run the development server:
+## 🚀 Features
+
+- **Drag & Drop Upload**: Easy file upload with progress tracking (up to 100MB)
+- **AI Transcription**: Accurate transcripts with timestamps using OpenAI Whisper
+- **Smart Summaries**: Comprehensive summaries with key points and insights
+- **Key Moments**: Automatically identified important timestamps
+- **Social Content**: Platform-optimized posts for Twitter, LinkedIn, Instagram, TikTok, etc.
+- **SEO Optimization**: Auto-generated titles and hashtags
+- **Real-time Updates**: Live processing status updates via Convex
+- **Modern UI**: Built with Next.js 15, shadcn/ui, and Tailwind CSS
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
+- **UI**: shadcn/ui, Tailwind CSS, Lucide Icons
+- **Authentication**: Clerk
+- **Database**: Convex (Real-time)
+- **Storage**: Vercel Blob
+- **Background Jobs**: Inngest
+- **File Upload**: react-dropzone, Vercel Blob SDK
+- **AI**: OpenAI Whisper & GPT (skeleton implementation ready)
+
+## 📋 Prerequisites
+
+- Node.js 18+ or Bun
+- pnpm (recommended) or npm
+- Accounts for:
+  - [Vercel](https://vercel.com) (for Blob storage)
+  - [Convex](https://convex.dev) (for database)
+  - [Clerk](https://clerk.com) (for authentication)
+  - [Inngest](https://inngest.com) (for background jobs)
+  - [OpenAI](https://openai.com) (optional, for future AI implementation)
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd ai-podcast-saas-inngest-coderabbit-clerk
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Set up environment variables
 
-## Learn More
+See [ENV_SETUP.md](./ENV_SETUP.md) for detailed instructions.
 
-To learn more about Next.js, take a look at the following resources:
+Create a `.env.local` file with:
+- `BLOB_READ_WRITE_TOKEN`
+- `NEXT_PUBLIC_CONVEX_URL`
+- `CONVEX_DEPLOY_KEY`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `INNGEST_EVENT_KEY`
+- `INNGEST_SIGNING_KEY`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Set up Convex
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm convex dev
+```
 
-## Deploy on Vercel
+This will:
+- Initialize your Convex project
+- Push the schema to your deployment
+- Start the Convex development server
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5. Run the development server
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see the app.
+
+### 6. Set up Inngest (for background jobs)
+
+Visit [http://localhost:3000/api/inngest](http://localhost:3000/api/inngest) to sync your functions with Inngest.
+
+## 📁 Project Structure
+
+```
+├── app/
+│   ├── api/
+│   │   ├── upload/          # Upload API route (Vercel Blob)
+│   │   └── inngest/         # Inngest function handler
+│   ├── projects/
+│   │   ├── [id]/           # Project detail page
+│   │   └── page.tsx        # Projects list
+│   ├── upload/             # Upload page
+│   ├── convex-provider.tsx # Convex + Clerk integration
+│   ├── layout.tsx          # Root layout
+│   └── page.tsx            # Home page
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   ├── upload-dropzone.tsx
+│   ├── upload-progress.tsx
+│   ├── project-status-card.tsx
+│   └── processing-steps.tsx
+├── convex/
+│   ├── schema.ts           # Database schema
+│   └── projects.ts         # Queries & mutations
+├── inngest/
+│   ├── client.ts           # Inngest client
+│   └── functions/
+│       └── podcast-processor.ts # Main processing workflow
+└── lib/
+    └── utils.ts            # Utility functions
+```
+
+## 🔄 How It Works
+
+1. **Upload**: User uploads podcast file via drag & drop (max 100MB)
+2. **Storage**: File is uploaded to Vercel Blob with progress tracking
+3. **Database**: Project record is created in Convex
+4. **Processing**: Inngest workflow is triggered with these steps:
+   - **Linear Phase**:
+     - Extract audio (if video)
+     - Transcribe audio
+   - **Parallel Phase**:
+     - Generate key moments
+     - Generate summary
+     - Generate captions (SRT)
+     - Generate titles
+     - Generate hashtags
+   - **Join Phase**:
+     - Save all results to Convex
+     - Update project status
+5. **Real-time UI**: Dashboard updates automatically via Convex subscriptions
+
+## 🎨 UI Components
+
+Built with shadcn/ui:
+- Button
+- Card
+- Progress
+- Badge
+- Input
+- Label
+- Tabs
+- Sonner (Toast notifications)
+
+## 📝 Current Implementation
+
+This is an **MVP skeleton** with:
+- ✅ Complete upload flow with progress tracking
+- ✅ Real-time database integration
+- ✅ Workflow orchestration structure
+- ✅ Mock AI processing (returns placeholder data)
+- ⏳ OpenAI integration ready (needs API implementation)
+
+## 🔮 Next Steps
+
+To complete the AI implementation:
+
+1. **Add OpenAI Whisper transcription**:
+   - Implement in `inngest/functions/podcast-processor.ts`
+   - Replace mock transcript with actual API call
+
+2. **Add GPT content generation**:
+   - Implement summary generation
+   - Implement key moments extraction
+   - Implement social posts generation
+   - Implement titles & hashtags generation
+
+3. **Add FFmpeg for video processing**:
+   - Extract audio from video files
+   - Store extracted audio in Vercel Blob
+
+4. **Enhance features**:
+   - Pagination for projects list
+   - Search & filter projects
+   - Export functionality
+   - Usage analytics
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+- Database by [Convex](https://convex.dev/)
+- Background jobs by [Inngest](https://inngest.com/)
+- Authentication by [Clerk](https://clerk.com/)
+- Storage by [Vercel Blob](https://vercel.com/storage/blob)

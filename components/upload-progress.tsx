@@ -1,0 +1,94 @@
+"use client";
+
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { FileAudio, FileVideo, Loader2, CheckCircle2, XCircle } from "lucide-react";
+
+interface UploadProgressProps {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  progress: number;
+  status: "idle" | "uploading" | "processing" | "completed" | "error";
+  error?: string;
+}
+
+export function UploadProgress({
+  fileName,
+  fileSize,
+  fileType,
+  progress,
+  status,
+  error,
+}: UploadProgressProps) {
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  };
+
+  const isVideo = fileType.startsWith("video/");
+  const Icon = isVideo ? FileVideo : FileAudio;
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-4">
+          {/* File Info */}
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-primary/10 p-3">
+              <Icon className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">{fileName}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatFileSize(fileSize)}
+              </p>
+            </div>
+            <div>
+              {status === "uploading" && (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              )}
+              {status === "processing" && (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              )}
+              {status === "completed" && (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              )}
+              {status === "error" && (
+                <XCircle className="h-5 w-5 text-destructive" />
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          {(status === "uploading" || status === "processing") && (
+            <div className="space-y-2">
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {status === "uploading" ? "Uploading..." : "Processing..."}
+                </span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Status Messages */}
+          {status === "completed" && (
+            <p className="text-sm text-green-600">
+              Upload completed! Redirecting to project dashboard...
+            </p>
+          )}
+
+          {status === "error" && error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
