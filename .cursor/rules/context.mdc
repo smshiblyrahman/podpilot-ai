@@ -9,10 +9,10 @@ This project is an AI-powered Podcast Assistant built with:
 - **Next.js 15**
 - **Clerk** (Auth + Billing)
 - **Convex** (Database + Realtime)
-- **UploadThing** (File uploads)
+- **Vercel Blob** (File storage for audio/video + outputs)
 - **Inngest** (Background job orchestration)
 - **OpenAI Whisper & GPT** (Transcription + content generation)
-- **Cloudflare R2 or UploadThing storage** (for captions/transcripts)
+- (Optional) **Cloudflare R2** for long-term storage of heavy artifacts
 
 The system processes a podcast **audio or video** file and generates:
 - Summary
@@ -30,46 +30,65 @@ No thumbnail generation.
 
 ## User Flow
 
-User Upload  
-↓  
-UploadThing returns file URL  
-↓  
-Create Convex project record  
-↓  
-Trigger Inngest event (`podcast.uploaded`)  
-↓  
-**Inngest workflow processes file in two phases:**
+1. **Upload**
+   - User selects a podcast audio/video file on the client.
+   - Client submits a `FormData` POST to a Next.js route: `POST /api/upload`.
 
-1. **Linear phase**
-   - Extract audio (if video)
-   - Transcribe audio
+2. **Upload Route (`/api/upload`)**
+   - Validates user via **Clerk**.
+   - Reads the `file` from `FormData`.
+   - Uploads the file to **Vercel Blob** using `put()`:
+     - Key pattern: `${userId}/${uuid()}.${ext}`
+     - `access: "public"` (or private if we later use signed URLs).
+   - Creates a `project` record in **Convex** (or at least has the information to later link results).
+   - Triggers an **Inngest** event: `podcast.uploaded` with:
+     - `fileUrl`
+     - `userId`
+     - `type` = `"audio"` or `"video"`
+     - (Optional) `projectId`
+   - Returns JSON to client:
+     - `{ url: fileUrl, projectId? }`
 
-2. **Parallel phase (fan-out) — all based on the transcript**
-   - Generate key moments (timestamps)
-   - Generate podcast summary
-   - Generate platform-optimized social posts
-   - Generate captions (SRT + text)
-   - Generate title suggestions
-   - Generate hashtags
-↓  
-Join results and save all outputs to Convex + storage  
-↓  
-Project status updated to `completed`  
-↓  
-User views results in dashboard
+3. **Inngest Workflow**
+   - Runs the processing pipeline in **two phases**:
+     - **Linear phase**:
+       - Extract audio (if video)
+       - Transcribe audio
+     - **Parallel phase** (fan-out based on transcript):
+       - Generate key moments (timestamps)
+       - Generate podcast summary
+       - Generate platform-optimized social posts
+       - Generate captions (SRT + raw text)
+       - Generate title suggestions
+       - Generate hashtags
+   - Joins all results and:
+     - Stores structured data in **Convex**
+     - Stores heavy artifacts (.srt, transcript JSON) in Blob/R2
+   - Updates project status to `completed`.
+
+4. **Dashboard**
+   - Client subscribes to Convex for project updates.
+   - User sees:
+     - Summary
+     - Key timestamps
+     - Captions (SRT download)
+     - Social posts
+     - Titles
+     - Hashtags
+     - Full transcript
 
 ---
 
-## Inngest Pipeline Steps (with Parallel Jobs)
+## Inngest Pipeline Steps (With Parallel Jobs)
 
-All steps should be implemented as `step.run` calls.  
-The **linear** steps must run sequentially; the **content-generation** steps should run in parallel after transcription.
+All steps should be implemented as `step.run`.  
+The **linear** steps run sequentially; the **content generation** runs in parallel after transcription using `Promise.all`.
 
 **Linear phase:**
 1. `extractAudioIfVideo`
 2. `transcribeAudio`
 
-**Parallel phase (run using `Promise.all` in the workflow):**
+**Parallel phase (fan-out):**
 3. `generateKeyMoments`  
 4. `generatePodcastSummary`  
 5. `generateCaptions` (.srt + raw transcript)  
@@ -80,7 +99,7 @@ The **linear** steps must run sequentially; the **content-generation** steps sho
 **Join phase:**
 9. `saveResultsToConvex`
 
-Implementation detail: after `transcribeAudio`, the workflow should call `Promise.all([...step.run(...)])` so that all content-generation steps execute in parallel, then join their results and persist.
+After `transcribeAudio`, the workflow should call `Promise.all([...step.run(...)])` to execute the content-generation steps in parallel, then join their results and persist.
 
 ---
 
@@ -92,12 +111,10 @@ Each upload corresponds to a single **project** document. Parallel Inngest jobs 
 {
   _id: Id<"projects">,
   userId: string,
-  inputUrl: string,
+  inputUrl: string, // Vercel Blob URL
 
-  // Overall project status
   status: "uploaded" | "processing" | "completed" | "failed",
 
-  // Optional finer-grained job statuses if needed
   jobStatus?: {
     transcription?: "pending" | "running" | "completed" | "failed",
     contentGeneration?: "pending" | "running" | "completed" | "failed"
@@ -114,8 +131,8 @@ Each upload corresponds to a single **project** document. Parallel Inngest jobs 
   },
 
   captions: {
-    srtUrl: string,   // public or signed URL to .srt
-    rawText: string,  // plain text transcript for captions
+    srtUrl: string,   // Blob URL to .srt
+    rawText: string,  // plain text for captions
   },
 
   socialPosts: {
@@ -144,3 +161,69 @@ Each upload corresponds to a single **project** document. Parallel Inngest jobs 
 
   createdAt: number
 }
+
+
+⸻
+
+Storage Layout (Vercel Blob / R2)
+
+Use Blob for simplicity; optionally mirror or migrate to R2 for cost.
+
+Example key layout:
+
+blob://uploads/{userId}/{uuid}/input.(mp4|mp3|wav)
+blob://transcripts/{projectId}/transcript.json
+blob://captions/{projectId}/captions.srt
+
+Convex stores only URLs, never raw file buffers.
+
+⸻
+
+Authentication & Billing
+	•	Clerk handles user accounts, sessions, orgs.
+	•	Upload route (POST /api/upload) must require an authenticated user.
+	•	Clerk Billing (Stripe) restricts:
+	•	Max duration per file
+	•	Number of projects per month
+	•	Concurrent processing limits
+	•	Access to certain features (e.g., export, bulk processing)
+
+⸻
+
+UI Requirements
+
+Upload Page
+	•	File input or drag & drop.
+	•	On submit:
+	•	POST to /api/upload with FormData.
+	•	Show “Uploading…” → “Processing…”.
+	•	Store returned projectId (if present) to link to dashboard.
+
+Project Dashboard
+
+Per project, show:
+	•	Status (uploaded / processing / completed)
+	•	Summary
+	•	Key timestamps
+	•	Captions (download SRT)
+	•	Social posts (per platform)
+	•	Title suggestions
+	•	Hashtags
+	•	Full transcript
+
+The UI should use Convex subscriptions / queries to update in realtime as Inngest fills the document.
+
+⸻
+
+Out of Scope
+	•	No video clipping
+	•	No thumbnail generation
+	•	No visual editing tools
+	•	No live streaming
+
+⸻
+
+Goal
+
+Create the cleanest, most reliable AI workflow SaaS that turns any podcast audio/video into:
+Summaries, timestamps, captions, social posts, titles, hashtags & transcript, using Vercel Blob + Inngest (parallel jobs) + Convex + Clerk.
