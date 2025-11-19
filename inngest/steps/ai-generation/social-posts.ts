@@ -1,18 +1,11 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
 import { socialPostsSchema, type SocialPosts } from "../../schemas/ai-outputs";
-import { openai } from "../../lib/openai-client";
 import { zodResponseFormat } from "openai/helpers/zod";
-import {
-  publishStepStart,
-  publishStepComplete,
-  publishResult,
-  type PublishFunction,
-} from "../../lib/realtime";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import type { step as InngestStep } from "inngest";
+import type { PublishFunction } from "../../lib/realtime";
+import { openai } from "../../lib/openai-client";
+import type OpenAI from "openai";
 
 const SOCIAL_SYSTEM_PROMPT =
   "You are a viral social media marketing expert who understands each platform's unique audience, tone, and best practices. You create platform-optimized content that drives engagement and grows audiences.";
@@ -79,37 +72,46 @@ Make each post unique and truly optimized for that platform. No generic content.
 }
 
 export async function generateSocialPosts(
+  step: typeof InngestStep,
   transcript: TranscriptWithExtras,
   projectId: Id<"projects">,
   publish: PublishFunction
 ): Promise<SocialPosts> {
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "social",
-    status: "running",
+  // Publish start as a tracked step
+  await step.run("social:publish-start", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:social:start",
+      data: {
+        job: "social",
+        status: "running",
+        message: "Generating social posts...",
+      },
+    });
   });
-
-  await publishStepStart(
-    publish,
-    projectId,
-    "social",
-    "Generating platform-specific social posts...",
-    60
-  );
 
   console.log("Generating social posts with GPT-4");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: SOCIAL_SYSTEM_PROMPT },
-        { role: "user", content: buildSocialPrompt(transcript) },
-      ],
-      response_format: zodResponseFormat(socialPostsSchema, "social_posts"),
-    });
+    // Bind OpenAI method to preserve client context (required per Inngest docs)
+    const createCompletion = openai.chat.completions.create.bind(
+      openai.chat.completions
+    );
 
-    const content = completion.choices[0]?.message?.content;
+    const response = (await step.ai.wrap(
+      "generate-social-posts-with-gpt",
+      createCompletion,
+      {
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: SOCIAL_SYSTEM_PROMPT },
+          { role: "user", content: buildSocialPrompt(transcript) },
+        ],
+        response_format: zodResponseFormat(socialPostsSchema, "social_posts"),
+      }
+    )) as OpenAI.Chat.Completions.ChatCompletion;
+
+    const content = response.choices[0]?.message?.content;
     const socialPosts = content
       ? socialPostsSchema.parse(JSON.parse(content))
       : {
@@ -121,23 +123,22 @@ export async function generateSocialPosts(
           facebook: "New podcast available!",
         };
 
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "social",
-      status: "completed",
+    // Publish complete as a tracked step
+    await step.run("social:publish-complete", async () => {
+      await publish({
+        channel: `project:${projectId}`,
+        topic: "ai-generation:social:complete",
+        data: {
+          job: "social",
+          status: "completed",
+          message: "Social posts generated!",
+        },
+      });
     });
-
-    await publishResult(publish, projectId, "social", socialPosts);
 
     return socialPosts;
   } catch (error) {
     console.error("GPT social posts error:", error);
-
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "social",
-      status: "failed",
-    });
 
     return {
       twitter: "⚠️ Error generating social post. Check logs for details.",
@@ -149,4 +150,3 @@ export async function generateSocialPosts(
     };
   }
 }
-

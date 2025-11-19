@@ -1,15 +1,9 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
-import {
-  publishStepStart,
-  publishStepComplete,
-  type PublishFunction,
-} from "../../lib/realtime";
+import type { step as InngestStep } from "inngest";
+import type { PublishFunction } from "../../lib/realtime";
 import { openai } from "../../lib/openai-client";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import type OpenAI from "openai";
 
 type YouTubeTimestamp = {
   timestamp: string;
@@ -41,23 +35,23 @@ function formatYouTubeTimestamp(seconds: number): string {
 }
 
 export async function generateYouTubeTimestamps(
+  step: typeof InngestStep,
   transcript: TranscriptWithExtras,
   projectId: Id<"projects">,
   publish: PublishFunction
 ): Promise<YouTubeTimestamp[]> {
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "youtubeTimestamps",
-    status: "running",
+  // Publish start as a tracked step
+  await step.run("youtube:publish-start", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:youtube:start",
+      data: {
+        job: "youtube",
+        status: "running",
+        message: "Generating YouTube timestamps...",
+      },
+    });
   });
-
-  await publishStepStart(
-    publish,
-    projectId,
-    "youtubeTimestamps",
-    "Generating YouTube timestamps...",
-    40
-  );
 
   console.log(
     "Generating YouTube timestamps from AssemblyAI chapters with AI-enhanced titles"
@@ -117,24 +111,32 @@ Example:
   ]
 }`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a YouTube content expert who creates engaging, clickable titles for video chapters. You make titles punchy and compelling while staying true to the content.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    response_format: { type: "json_object" },
-    max_completion_tokens: 1500,
-  });
+  // Bind OpenAI method to preserve client context (required per Inngest docs)
+  const createCompletion = openai.chat.completions.create.bind(
+    openai.chat.completions
+  );
 
-  const content = completion.choices[0]?.message?.content || '{"titles":[]}';
+  const response = (await step.ai.wrap(
+    "generate-youtube-titles-with-gpt",
+    createCompletion,
+    {
+      model: "gpt-5-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a YouTube content expert who creates engaging, clickable titles for video chapters. You make titles punchy and compelling while staying true to the content.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_completion_tokens: 1500,
+    }
+  )) as OpenAI.Chat.Completions.ChatCompletion;
+
+  const content = response.choices[0]?.message?.content || '{"titles":[]}';
 
   // Parse the AI response
   let aiTitles: { index: number; title: string }[] = [];
@@ -168,19 +170,18 @@ Example:
 
   console.log(`Generated ${youtubeTimestamps.length} YouTube timestamps`);
 
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "youtubeTimestamps",
-    status: "completed",
+  // Publish complete as a tracked step
+  await step.run("youtube:publish-complete", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:youtube:complete",
+      data: {
+        job: "youtube",
+        status: "completed",
+        message: "YouTube timestamps generated!",
+      },
+    });
   });
-
-  await publishStepComplete(
-    publish,
-    projectId,
-    "youtubeTimestamps",
-    "YouTube timestamps generated!",
-    43
-  );
 
   return youtubeTimestamps;
 }

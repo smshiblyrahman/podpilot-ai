@@ -31,18 +31,23 @@ export default function ProjectDetailPage({
   // Fetch project data from Convex (for persistence)
   const project = useQuery(api.projects.getProject, { projectId });
 
-  // State for real-time updates from Inngest Realtime
-  const [processingStatus, setProcessingStatus] = useState<{
-    step?: string;
-    status?: string;
-    message?: string;
-    progress?: number;
-  } | null>(null);
-
-  // Track all step updates for showing completion messages
-  const [stepUpdates, setStepUpdates] = useState<
-    Map<string, { message: string; status: string }>
-  >(new Map());
+  // State for tracking individual AI job statuses
+  const [jobStatuses, setJobStatuses] = useState<
+    Record<
+      string,
+      {
+        status: "pending" | "running" | "completed";
+        message: string;
+      }
+    >
+  >({
+    summary: { status: "pending", message: "" },
+    hashtags: { status: "pending", message: "" },
+    titles: { status: "pending", message: "" },
+    social: { status: "pending", message: "" },
+    youtube: { status: "pending", message: "" },
+    keyMoments: { status: "pending", message: "" },
+  });
 
   // Fetch Inngest Realtime subscription token
   const fetchRealtimeToken = useCallback(async () => {
@@ -62,21 +67,36 @@ export default function ProjectDetailPage({
 
     freshData.forEach(
       (message: { topic: string; data: Record<string, unknown> }) => {
-        if (message.topic === "processing") {
-          const data = message.data as typeof processingStatus;
-          setProcessingStatus(data);
+        // Handle individual AI job start events
+        if (
+          message.topic.startsWith("ai-generation:") &&
+          message.topic.endsWith(":start")
+        ) {
+          const job = message.topic.split(":")[1]; // Extract job name
+          const data = message.data;
+          setJobStatuses((prev) => ({
+            ...prev,
+            [job]: {
+              status: "running",
+              message: data.message as string,
+            },
+          }));
+        }
 
-          // Track updates for each step (including completion messages)
-          if (data?.step && data?.message && data.step) {
-            setStepUpdates((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(data.step as string, {
-                message: data.message as string,
-                status: (data.status as string) || "running",
-              });
-              return newMap;
-            });
-          }
+        // Handle individual AI job complete events
+        if (
+          message.topic.startsWith("ai-generation:") &&
+          message.topic.endsWith(":complete")
+        ) {
+          const job = message.topic.split(":")[1]; // Extract job name
+          const data = message.data;
+          setJobStatuses((prev) => ({
+            ...prev,
+            [job]: {
+              status: "completed",
+              message: data.message as string,
+            },
+          }));
         }
       },
     );
@@ -128,7 +148,7 @@ export default function ProjectDetailPage({
             jobStatus={project.jobStatus}
             fileDuration={project.fileDuration}
             createdAt={project.createdAt}
-            stepUpdates={stepUpdates}
+            jobStatuses={jobStatuses}
           />
         )}
 

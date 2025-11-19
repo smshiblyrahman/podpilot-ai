@@ -1,18 +1,11 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
 import { hashtagsSchema, type Hashtags } from "../../schemas/ai-outputs";
-import { openai } from "../../lib/openai-client";
 import { zodResponseFormat } from "openai/helpers/zod";
-import {
-  publishStepStart,
-  publishStepComplete,
-  publishResult,
-  type PublishFunction,
-} from "../../lib/realtime";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import type { step as InngestStep } from "inngest";
+import type { PublishFunction } from "../../lib/realtime";
+import { openai } from "../../lib/openai-client";
+import type OpenAI from "openai";
 
 const HASHTAGS_SYSTEM_PROMPT =
   "You are a social media growth expert who understands platform algorithms and trending hashtag strategies. You create hashtag sets that maximize reach and engagement.";
@@ -63,37 +56,46 @@ All hashtags should include the # symbol and be relevant to the actual content d
 }
 
 export async function generateHashtags(
+  step: typeof InngestStep,
   transcript: TranscriptWithExtras,
   projectId: Id<"projects">,
   publish: PublishFunction
 ): Promise<Hashtags> {
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "hashtags",
-    status: "running",
+  // Publish start as a tracked step
+  await step.run("hashtags:publish-start", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:hashtags:start",
+      data: {
+        job: "hashtags",
+        status: "running",
+        message: "Generating hashtags...",
+      },
+    });
   });
-
-  await publishStepStart(
-    publish,
-    projectId,
-    "hashtags",
-    "Generating smart hashtags...",
-    90
-  );
 
   console.log("Generating hashtags with GPT");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: HASHTAGS_SYSTEM_PROMPT },
-        { role: "user", content: buildHashtagsPrompt(transcript) },
-      ],
-      response_format: zodResponseFormat(hashtagsSchema, "hashtags"),
-    });
+    // Bind OpenAI method to preserve client context (required per Inngest docs)
+    const createCompletion = openai.chat.completions.create.bind(
+      openai.chat.completions
+    );
 
-    const content = completion.choices[0]?.message?.content;
+    const response = (await step.ai.wrap(
+      "generate-hashtags-with-gpt",
+      createCompletion,
+      {
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: HASHTAGS_SYSTEM_PROMPT },
+          { role: "user", content: buildHashtagsPrompt(transcript) },
+        ],
+        response_format: zodResponseFormat(hashtagsSchema, "hashtags"),
+      }
+    )) as OpenAI.Chat.Completions.ChatCompletion;
+
+    const content = response.choices[0]?.message?.content;
     const hashtags = content
       ? hashtagsSchema.parse(JSON.parse(content))
       : {
@@ -104,23 +106,22 @@ export async function generateHashtags(
           twitter: ["#Podcast"],
         };
 
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "hashtags",
-      status: "completed",
+    // Publish complete as a tracked step
+    await step.run("hashtags:publish-complete", async () => {
+      await publish({
+        channel: `project:${projectId}`,
+        topic: "ai-generation:hashtags:complete",
+        data: {
+          job: "hashtags",
+          status: "completed",
+          message: "Hashtags generated!",
+        },
+      });
     });
-
-    await publishResult(publish, projectId, "hashtags", hashtags);
 
     return hashtags;
   } catch (error) {
     console.error("GPT hashtags error:", error);
-
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "hashtags",
-      status: "failed",
-    });
 
     return {
       youtube: ["⚠️ Hashtag generation failed"],
@@ -131,4 +132,3 @@ export async function generateHashtags(
     };
   }
 }
-

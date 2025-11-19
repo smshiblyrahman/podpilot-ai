@@ -37,9 +37,10 @@ export async function GET(request: Request) {
 
     // Generate Inngest Realtime subscription token
     // Scoped to this specific project channel
+    // Subscribe to all topics on this channel (wildcards work with Inngest Realtime)
     const token = await getSubscriptionToken(inngest, {
       channel: `project:${projectId}`,
-      topics: ["processing", "ai_stream", "progress", "results"],
+      topics: ["*"], // Subscribe to all topics on this channel
     });
 
     return NextResponse.json({ token });

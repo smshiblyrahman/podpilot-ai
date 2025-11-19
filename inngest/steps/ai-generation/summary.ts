@@ -1,18 +1,11 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
 import { summarySchema, type Summary } from "../../schemas/ai-outputs";
-import { openai } from "../../lib/openai-client";
 import { zodResponseFormat } from "openai/helpers/zod";
-import {
-  publishStepStart,
-  publishStepComplete,
-  publishResult,
-  type PublishFunction,
-} from "../../lib/realtime";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import type { step as InngestStep } from "inngest";
+import type { PublishFunction } from "../../lib/realtime";
+import { openai } from "../../lib/openai-client";
+import type OpenAI from "openai";
 
 const SUMMARY_SYSTEM_PROMPT =
   "You are an expert podcast content analyst and marketing strategist. Your summaries are engaging, insightful, and highlight the most valuable takeaways for listeners.";
@@ -59,37 +52,46 @@ Be specific, engaging, and valuable. Focus on what makes this podcast unique and
 }
 
 export async function generateSummary(
+  step: typeof InngestStep,
   transcript: TranscriptWithExtras,
   projectId: Id<"projects">,
   publish: PublishFunction
 ): Promise<Summary> {
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "summary",
-    status: "running",
+  // Publish start as a tracked step
+  await step.run("summary:publish-start", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:summary:start",
+      data: {
+        job: "summary",
+        status: "running",
+        message: "Generating summary...",
+      },
+    });
   });
-
-  await publishStepStart(
-    publish,
-    projectId,
-    "summary",
-    "Generating intelligent summary with GPT-4...",
-    40
-  );
 
   console.log("Generating podcast summary with GPT-4");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: SUMMARY_SYSTEM_PROMPT },
-        { role: "user", content: buildSummaryPrompt(transcript) },
-      ],
-      response_format: zodResponseFormat(summarySchema, "summary"),
-    });
+    // Bind OpenAI method to preserve client context (required per Inngest docs)
+    const createCompletion = openai.chat.completions.create.bind(
+      openai.chat.completions
+    );
 
-    const content = completion.choices[0]?.message?.content;
+    const response = (await step.ai.wrap(
+      "generate-summary-with-gpt",
+      createCompletion,
+      {
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: SUMMARY_SYSTEM_PROMPT },
+          { role: "user", content: buildSummaryPrompt(transcript) },
+        ],
+        response_format: zodResponseFormat(summarySchema, "summary"),
+      }
+    )) as OpenAI.Chat.Completions.ChatCompletion;
+
+    const content = response.choices[0]?.message?.content;
     const summary = content
       ? summarySchema.parse(JSON.parse(content))
       : {
@@ -99,23 +101,22 @@ export async function generateSummary(
           tldr: transcript.text.substring(0, 200),
         };
 
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "summary",
-      status: "completed",
+    // Publish complete as a tracked step
+    await step.run("summary:publish-complete", async () => {
+      await publish({
+        channel: `project:${projectId}`,
+        topic: "ai-generation:summary:complete",
+        data: {
+          job: "summary",
+          status: "completed",
+          message: "Summary generated!",
+        },
+      });
     });
-
-    await publishResult(publish, projectId, "summary", summary);
 
     return summary;
   } catch (error) {
     console.error("GPT summary generation error:", error);
-
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "summary",
-      status: "failed",
-    });
 
     return {
       full: "⚠️ Error generating summary with GPT-4. Please check logs or try again.",

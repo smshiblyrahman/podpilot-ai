@@ -1,18 +1,11 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
 import { titlesSchema, type Titles } from "../../schemas/ai-outputs";
-import { openai } from "../../lib/openai-client";
 import { zodResponseFormat } from "openai/helpers/zod";
-import {
-  publishStepStart,
-  publishStepComplete,
-  publishResult,
-  type PublishFunction,
-} from "../../lib/realtime";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import type { step as InngestStep } from "inngest";
+import type { PublishFunction } from "../../lib/realtime";
+import { openai } from "../../lib/openai-client";
+import type OpenAI from "openai";
 
 const TITLES_SYSTEM_PROMPT =
   "You are an expert in SEO, content marketing, and viral content creation. You understand what makes titles clickable while maintaining credibility and search rankings.";
@@ -61,37 +54,46 @@ Make titles compelling, accurate, and optimized for discovery.`;
 }
 
 export async function generateTitles(
+  step: typeof InngestStep,
   transcript: TranscriptWithExtras,
   projectId: Id<"projects">,
   publish: PublishFunction
 ): Promise<Titles> {
-  await convex.mutation(api.projects.updateJobStatus, {
-    projectId,
-    job: "titles",
-    status: "running",
+  // Publish start as a tracked step
+  await step.run("titles:publish-start", async () => {
+    await publish({
+      channel: `project:${projectId}`,
+      topic: "ai-generation:titles:start",
+      data: {
+        job: "titles",
+        status: "running",
+        message: "Generating titles...",
+      },
+    });
   });
-
-  await publishStepStart(
-    publish,
-    projectId,
-    "titles",
-    "Generating SEO-optimized titles with GPT-4...",
-    70
-  );
 
   console.log("Generating title suggestions with GPT-4");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: TITLES_SYSTEM_PROMPT },
-        { role: "user", content: buildTitlesPrompt(transcript) },
-      ],
-      response_format: zodResponseFormat(titlesSchema, "titles"),
-    });
+    // Bind OpenAI method to preserve client context (required per Inngest docs)
+    const createCompletion = openai.chat.completions.create.bind(
+      openai.chat.completions
+    );
 
-    const titlesContent = completion.choices[0]?.message?.content;
+    const response = (await step.ai.wrap(
+      "generate-titles-with-gpt",
+      createCompletion,
+      {
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system", content: TITLES_SYSTEM_PROMPT },
+          { role: "user", content: buildTitlesPrompt(transcript) },
+        ],
+        response_format: zodResponseFormat(titlesSchema, "titles"),
+      }
+    )) as OpenAI.Chat.Completions.ChatCompletion;
+
+    const titlesContent = response.choices[0]?.message?.content;
     const titles = titlesContent
       ? titlesSchema.parse(JSON.parse(titlesContent))
       : {
@@ -101,23 +103,22 @@ export async function generateTitles(
           seoKeywords: ["podcast"],
         };
 
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "titles",
-      status: "completed",
+    // Publish complete as a tracked step
+    await step.run("titles:publish-complete", async () => {
+      await publish({
+        channel: `project:${projectId}`,
+        topic: "ai-generation:titles:complete",
+        data: {
+          job: "titles",
+          status: "completed",
+          message: "Titles generated!",
+        },
+      });
     });
-
-    await publishResult(publish, projectId, "titles", titles);
 
     return titles;
   } catch (error) {
     console.error("GPT titles error:", error);
-
-    await convex.mutation(api.projects.updateJobStatus, {
-      projectId,
-      job: "titles",
-      status: "failed",
-    });
 
     return {
       youtubeShort: ["⚠️ Title generation failed"],
@@ -127,4 +128,3 @@ export async function generateTitles(
     };
   }
 }
-

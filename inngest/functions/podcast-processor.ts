@@ -9,12 +9,14 @@ import { generateTitles } from "../steps/ai-generation/titles";
 import { generateHashtags } from "../steps/ai-generation/hashtags";
 import { generateYouTubeTimestamps } from "../steps/ai-generation/youtube-timestamps";
 import { saveResultsToConvex } from "../steps/persistence/save-to-convex";
-import { publishStepStart } from "../lib/realtime";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 
 export const podcastProcessor = inngest.createFunction(
-  { id: "podcast-processor" },
+  {
+    id: "podcast-processor",
+    optimizeParallelism: true, // Optimize parallel AI generation steps
+  },
   { event: "podcast/uploaded" },
   async ({ event, step, publish }) => {
     const { projectId, fileUrl } = event.data;
@@ -29,13 +31,14 @@ export const podcastProcessor = inngest.createFunction(
         status: "processing",
       });
 
-      await publishStepStart(
-        publish,
-        projectId,
-        "",
-        "Starting podcast processing...",
-        0
-      );
+      await publish({
+        channel: `project:${projectId}`,
+        topic: "processing:start",
+        data: {
+          message: "Starting podcast processing...",
+          progress: 0,
+        },
+      });
     });
 
     // =======================================================================
@@ -49,6 +52,8 @@ export const podcastProcessor = inngest.createFunction(
     // =======================================================================
     // PARALLEL PHASE: AI Content Generation
     // =======================================================================
+    // Each function uses step.ai.wrap() internally and publishes realtime updates
+    // We call them directly (not wrapped in step.run) to avoid nesting
 
     const [
       keyMoments,
@@ -58,24 +63,12 @@ export const podcastProcessor = inngest.createFunction(
       hashtags,
       youtubeTimestamps,
     ] = await Promise.all([
-      step.run("generate-key-moments", () =>
-        generateKeyMoments(transcript, projectId, publish)
-      ),
-      step.run("generate-podcast-summary", () =>
-        generateSummary(transcript, projectId, publish)
-      ),
-      step.run("generate-social-posts", () =>
-        generateSocialPosts(transcript, projectId, publish)
-      ),
-      step.run("generate-titles", () =>
-        generateTitles(transcript, projectId, publish)
-      ),
-      step.run("generate-hashtags", () =>
-        generateHashtags(transcript, projectId, publish)
-      ),
-      step.run("generate-youtube-timestamps", () =>
-        generateYouTubeTimestamps(transcript, projectId, publish)
-      ),
+      generateKeyMoments(step, transcript, projectId, publish),
+      generateSummary(step, transcript, projectId, publish),
+      generateSocialPosts(step, transcript, projectId, publish),
+      generateTitles(step, transcript, projectId, publish),
+      generateHashtags(step, transcript, projectId, publish),
+      generateYouTubeTimestamps(step, transcript, projectId, publish),
     ]);
 
     // =======================================================================

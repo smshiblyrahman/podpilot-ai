@@ -29,14 +29,20 @@ interface ProcessingFlowProps {
   jobStatus: Doc<"projects">["jobStatus"];
   fileDuration?: number;
   createdAt: number;
-  stepUpdates?: Map<string, { message: string; status: string }>;
+  jobStatuses?: Record<
+    string,
+    {
+      status: "pending" | "running" | "completed";
+      message: string;
+    }
+  >;
 }
 
 export function ProcessingFlow({
   jobStatus,
   fileDuration,
   createdAt,
-  stepUpdates,
+  jobStatuses,
 }: ProcessingFlowProps) {
   const transcriptionStatus = jobStatus.transcription;
   const isTranscribing = transcriptionStatus === "running";
@@ -231,8 +237,12 @@ export function ProcessingFlow({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {parallelSteps.map((step) => {
                 const Icon = step.icon;
-                const stepUpdate = stepUpdates?.get(step.key);
-                const hasRealtimeUpdate = !!stepUpdate;
+                // Use granular job status if available, otherwise fall back to jobStatus
+                const realtimeJobStatus = jobStatuses?.[step.key];
+                const currentStatus = realtimeJobStatus?.status || step.status;
+                const currentMessage = realtimeJobStatus?.message;
+                const hasRealtimeUpdate =
+                  !!realtimeJobStatus && !!currentMessage;
 
                 return (
                   <div key={step.key} className="space-y-2">
@@ -241,9 +251,9 @@ export function ProcessingFlow({
                         "rounded-lg border p-4 transition-all",
                         !transcriptionComplete &&
                           "opacity-40 cursor-not-allowed",
-                        step.status === "running" &&
+                        currentStatus === "running" &&
                           "border-green-500 bg-green-50",
-                        step.status === "completed" &&
+                        currentStatus === "completed" &&
                           "border-green-500 bg-green-50",
                       )}
                     >
@@ -254,35 +264,42 @@ export function ProcessingFlow({
                             {step.label}
                           </span>
                         </div>
-                        {step.status === "running" && (
+                        {currentStatus === "running" && (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         )}
-                        {step.status === "completed" && (
+                        {currentStatus === "completed" && (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
                         )}
-                        {step.status === "pending" && (
+                        {currentStatus === "pending" && (
                           <Clock className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
                       <Badge
                         variant={
-                          step.status === "completed" ? "default" : "outline"
+                          currentStatus === "completed" ? "default" : "outline"
                         }
                         className="text-xs"
                       >
-                        {step.status === "pending" ? "Waiting" : step.status}
+                        {currentStatus === "pending"
+                          ? "Waiting"
+                          : currentStatus}
                       </Badge>
                     </div>
 
-                    {/* Realtime Update Message - only show while running */}
-                    {hasRealtimeUpdate &&
-                      stepUpdate &&
-                      step.status === "running" && (
-                        <div className="text-xs text-primary/80 italic flex items-center gap-1 px-2">
-                          <span>✨</span>
-                          <span>{stepUpdate.message}</span>
-                        </div>
-                      )}
+                    {/* Realtime Update Message - show for running and completed */}
+                    {hasRealtimeUpdate && (
+                      <div
+                        className={cn(
+                          "text-xs italic flex items-center gap-1 px-2",
+                          currentStatus === "running" &&
+                            "text-primary/80 animate-pulse",
+                          currentStatus === "completed" && "text-green-600/80",
+                        )}
+                      >
+                        <span>{currentStatus === "running" ? "✨" : "✓"}</span>
+                        <span>{currentMessage}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
