@@ -1,21 +1,21 @@
 /**
  * Upload Progress Component
- * 
+ *
  * Displays upload status, progress, and file metadata.
  * Provides visual feedback for upload and processing states.
- * 
+ *
  * States:
  * - uploading: File being uploaded to Blob (0-100% progress)
  * - processing: Creating project and triggering workflow (100% progress)
  * - completed: Ready to view project (shows success message)
  * - error: Upload or processing failed (shows error message)
- * 
+ *
  * File Metadata Display:
  * - File name (truncated if long)
  * - File size (formatted: MB, GB, etc.)
  * - Duration (if available, formatted: MM:SS or HH:MM:SS)
  * - Status icon (spinner, check, error)
- * 
+ *
  * Design Decision: Show duration in upload screen
  * - Helps users verify correct file was selected
  * - Provides context for expected processing time
@@ -56,12 +56,12 @@ export function UploadProgress({
             <div className="rounded-lg bg-primary/10 p-3">
               <FileAudio className="h-6 w-6 text-primary" />
             </div>
-            
+
             {/* File info */}
             <div className="flex-1 min-w-0">
               {/* File name (truncated if too long) */}
               <p className="font-medium truncate">{fileName}</p>
-              
+
               {/* Size and duration metadata */}
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span>{formatFileSize(fileSize)}</span>
@@ -76,7 +76,7 @@ export function UploadProgress({
                 )}
               </div>
             </div>
-            
+
             {/* Status icon (right side) */}
             <div>
               {status === "uploading" && (

@@ -1,6 +1,6 @@
 /**
  * Application Constants
- * 
+ *
  * Centralized configuration values used across the application.
  * Includes file size limits, allowed formats, timing constants, and UI config.
  */
@@ -19,7 +19,7 @@ export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
 
 /**
  * Allowed audio MIME types for upload validation
- * 
+ *
  * Comprehensive list for cross-browser compatibility:
  * - Different browsers report different MIME types for same format
  * - Includes both standard and vendor-specific types
@@ -35,7 +35,7 @@ export const ALLOWED_AUDIO_TYPES = [
   "audio/x-wav", // WAV (Microsoft)
   "audio/wave", // WAV (alternate)
   "audio/aac", // AAC
-  "audio/aacp", // AAC+ 
+  "audio/aacp", // AAC+
   "audio/ogg", // OGG Vorbis
   "audio/opus", // Opus
   "audio/webm", // WebM Audio
@@ -47,7 +47,7 @@ export const ALLOWED_AUDIO_TYPES = [
 
 /**
  * Progress animation constants
- * 
+ *
  * Used in processing flow for smooth progress indication:
  * - PROGRESS_CAP_PERCENTAGE: Stop at 95% until actual completion (UX best practice)
  * - ANIMATION_INTERVAL_MS: Speed of progress bar animation
@@ -59,7 +59,7 @@ export const PROGRESS_UPDATE_INTERVAL_MS = 1000;
 
 /**
  * Time conversion constants
- * 
+ *
  * Used for duration formatting and time calculations
  */
 export const MS_PER_MINUTE = 60000;
@@ -68,12 +68,12 @@ export const MS_PER_DAY = 86400000;
 
 /**
  * UI configuration for generation outputs
- * 
+ *
  * Defines the 6 AI generation tasks displayed during processing:
  * - Name: Display name for UI
  * - Icon: Lucide icon component
  * - Description: What the task generates
- * 
+ *
  * Used in ProcessingFlow component to show progress
  */
 export interface GenerationOutput {

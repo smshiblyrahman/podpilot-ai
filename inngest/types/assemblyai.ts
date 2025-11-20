@@ -1,15 +1,15 @@
 /**
  * AssemblyAI Type Definitions
- * 
+ *
  * Type definitions for AssemblyAI's transcription API responses.
  * AssemblyAI's official TypeScript types are incomplete, so we define our own.
- * 
+ *
  * Key Features Used:
  * - Word-level timestamps: Precise timing for each word
  * - Speaker diarization: Who said what (speaker labels A, B, C, etc.)
  * - Auto chapters: AI-detected topic changes with summaries
  * - Segments: Logical chunks of speech (sentence-level)
- * 
+ *
  * Data Flow:
  * 1. AssemblyAI returns these structures
  * 2. We transform to match our Convex schema

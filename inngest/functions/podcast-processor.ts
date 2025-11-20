@@ -1,27 +1,27 @@
 /**
  * Podcast Processing Workflow - Main Orchestration Function
- * 
+ *
  * This is the core of the application - a durable, observable workflow that:
  * 1. Transcribes audio using AssemblyAI
  * 2. Generates 6 types of AI content in parallel using OpenAI
  * 3. Saves all results to Convex for real-time UI updates
- * 
+ *
  * Inngest Benefits for This Use Case:
  * - Durable execution: If OpenAI times out, the step retries automatically
  * - Parallel execution: 6 AI jobs run simultaneously, reducing total time by ~5x
  * - Real-time updates: UI shows progress as each step completes
  * - Observability: Full execution history and logs in Inngest dashboard
  * - Type safety: Events and steps are fully typed
- * 
+ *
  * Triggered by: Server action after file upload to Vercel Blob
  * Event: "podcast/uploaded" with { projectId, fileUrl }
- * 
+ *
  * Workflow Pattern:
  * 1. Update project status to "processing"
  * 2. Transcribe audio (sequential - required for next steps)
  * 3. Generate content in parallel (Promise.all - 6 independent AI jobs)
  * 4. Save all results atomically to Convex
- * 
+ *
  * Real-time Updates:
  * - publish() sends progress events to subscribed frontend clients
  * - Frontend hook (useProjectRealtime) receives these events

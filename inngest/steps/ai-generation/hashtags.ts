@@ -1,16 +1,16 @@
 /**
  * Platform-Specific Hashtag Generation
- * 
+ *
  * Generates optimized hashtag strategies for 5 social platforms.
  * Each platform has different hashtag best practices and algorithms.
- * 
+ *
  * Platform Strategies:
  * - YouTube: 5 hashtags, broad reach, discovery-focused
  * - Instagram: 6-8 hashtags, mix of niche + broad (sweet spot for engagement)
  * - TikTok: 5-6 hashtags, trending tags for FYP algorithm
  * - LinkedIn: 5 hashtags, professional/industry-specific
  * - Twitter: 5 hashtags, concise and conversation-starting
- * 
+ *
  * Why Platform-Specific?
  * - Each platform's algorithm treats hashtags differently
  * - Instagram rewards 6-8 hashtags, Twitter prefers 1-2
@@ -30,12 +30,12 @@ const HASHTAGS_SYSTEM_PROMPT =
 
 /**
  * Builds prompt with episode topics and platform-specific guidelines
- * 
+ *
  * Context Provided:
  * - Chapter headlines (topic extraction)
  * - Platform-specific hashtag counts and strategies
  * - Best practices for each platform's algorithm
- * 
+ *
  * Prompt Engineering:
  * - Exact counts specified (5 for most, 6-8 for Instagram)
  * - Platform algorithm considerations explained
@@ -88,12 +88,12 @@ All hashtags should include the # symbol and be relevant to the actual content d
 
 /**
  * Generates hashtag sets using OpenAI with structured outputs
- * 
+ *
  * Error Handling:
  * - Returns placeholder hashtags on failure
  * - Logs errors for debugging
  * - Graceful degradation (workflow continues)
- * 
+ *
  * Validation:
  * - Zod schema enforces exact counts per platform
  * - Instagram validated for 6-8 range (optimal engagement)
@@ -101,14 +101,14 @@ All hashtags should include the # symbol and be relevant to the actual content d
  */
 export async function generateHashtags(
   step: typeof InngestStep,
-  transcript: TranscriptWithExtras,
+  transcript: TranscriptWithExtras
 ): Promise<Hashtags> {
   console.log("Generating hashtags with GPT");
 
   try {
     // Bind OpenAI method to preserve `this` context for step.ai.wrap
     const createCompletion = openai.chat.completions.create.bind(
-      openai.chat.completions,
+      openai.chat.completions
     );
 
     // Call OpenAI with Structured Outputs for validated response
@@ -122,7 +122,7 @@ export async function generateHashtags(
           { role: "user", content: buildHashtagsPrompt(transcript) },
         ],
         response_format: zodResponseFormat(hashtagsSchema, "hashtags"),
-      },
+      }
     )) as OpenAI.Chat.Completions.ChatCompletion;
 
     const content = response.choices[0]?.message?.content;

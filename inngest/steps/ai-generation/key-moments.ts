@@ -1,20 +1,20 @@
 /**
  * Key Moments Generation Step
- * 
+ *
  * Extracts key moments from AssemblyAI's auto-generated chapters.
  * These moments represent interesting points for social media clips or navigation.
- * 
+ *
  * Data Source: AssemblyAI Auto Chapters
  * - AssemblyAI's AI detects topic changes automatically
  * - Each chapter has: start time, headline, and summary
  * - No additional AI generation needed (fast and cost-free)
- * 
+ *
  * Design Decision: Use AssemblyAI chapters vs. GPT analysis
  * - Pro: Fast, no additional API costs
  * - Pro: Reliable timing data from transcription source
  * - Con: Quality depends on AssemblyAI's chapter detection
  * - Trade-off: Good enough for most podcasts, cheaper than GPT analysis
- * 
+ *
  * Use Cases:
  * - Social media clip selection
  * - Podcast navigation timestamps
@@ -32,16 +32,16 @@ type KeyMoment = {
 
 /**
  * Transforms AssemblyAI chapters into key moments
- * 
+ *
  * Transformation:
  * - Converts milliseconds to seconds
  * - Formats timestamp for display (HH:MM:SS or MM:SS)
  * - Maps chapter data to our KeyMoment structure
- * 
+ *
  * Performance: Near-instant (no AI API call)
  */
 export async function generateKeyMoments(
-  transcript: TranscriptWithExtras,
+  transcript: TranscriptWithExtras
 ): Promise<KeyMoment[]> {
   console.log("Generating key moments from AssemblyAI chapters");
 

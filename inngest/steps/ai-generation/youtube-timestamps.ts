@@ -1,24 +1,24 @@
 /**
  * YouTube Timestamps Generation
- * 
+ *
  * Generates YouTube chapter timestamps with AI-enhanced descriptions.
  * YouTube chapters improve video navigation, watch time, and SEO.
- * 
+ *
  * Two-Step Process:
  * 1. Extract timing from AssemblyAI chapters (accurate timestamps)
  * 2. Use GPT to create punchy, clickable chapter titles
- * 
+ *
  * Why Hybrid Approach (AssemblyAI + GPT)?
  * - AssemblyAI: Accurate timing and topic detection
  * - GPT: Engaging, YouTube-optimized titles
  * - Result: Best of both - precise timing with compelling titles
- * 
+ *
  * YouTube Requirements:
  * - First timestamp must be 0:00
  * - Max 100 timestamps per video
  * - Format: "MM:SS Description" or "HH:MM:SS Description"
  * - Each chapter should have meaningful title
- * 
+ *
  * Use Cases:
  * - Paste directly into YouTube description
  * - Improves video SEO and watch time
@@ -37,14 +37,14 @@ type YouTubeTimestamp = {
 
 /**
  * Generates YouTube-ready timestamps with AI-enhanced titles
- * 
+ *
  * Process Flow:
  * 1. Extract chapters from AssemblyAI (timing + basic titles)
  * 2. Limit to 100 chapters (YouTube's max)
  * 3. Send to GPT for title enhancement
  * 4. Combine AI titles with original timestamps
  * 5. Format for YouTube compatibility
- * 
+ *
  * Error Handling:
  * - Throws if no chapters available (can't generate without timing)
  * - Falls back to AssemblyAI headlines if GPT fails
@@ -52,10 +52,10 @@ type YouTubeTimestamp = {
  */
 export async function generateYouTubeTimestamps(
   step: typeof InngestStep,
-  transcript: TranscriptWithExtras,
+  transcript: TranscriptWithExtras
 ): Promise<YouTubeTimestamp[]> {
   console.log(
-    "Generating YouTube timestamps from AssemblyAI chapters with AI-enhanced titles",
+    "Generating YouTube timestamps from AssemblyAI chapters with AI-enhanced titles"
   );
 
   // Use AssemblyAI chapters for accurate timing
@@ -64,7 +64,7 @@ export async function generateYouTubeTimestamps(
   // Validation: Timestamps require chapter timing data
   if (!chapters || chapters.length === 0) {
     throw new Error(
-      "No chapters available from AssemblyAI. Cannot generate YouTube timestamps.",
+      "No chapters available from AssemblyAI. Cannot generate YouTube timestamps."
     );
   }
 
@@ -116,7 +116,7 @@ Example:
 
   // Bind OpenAI method to preserve `this` context for step.ai.wrap
   const createCompletion = openai.chat.completions.create.bind(
-    openai.chat.completions,
+    openai.chat.completions
   );
 
   // Call GPT to enhance chapter titles
@@ -137,7 +137,7 @@ Example:
         },
       ],
       max_completion_tokens: 1500, // Enough for 100 titles
-    },
+    }
   )) as OpenAI.Chat.Completions.ChatCompletion;
 
   const content = response.choices[0]?.message?.content || '{"titles":[]}';
@@ -165,7 +165,7 @@ Example:
 
   console.log(
     `Generated ${aiTimestamps.length} YouTube timestamps:`,
-    aiTimestamps.slice(0, 3).map((t) => `${t.timestamp}s: ${t.description}`),
+    aiTimestamps.slice(0, 3).map((t) => `${t.timestamp}s: ${t.description}`)
   );
 
   // Format timestamps in YouTube's required format (MM:SS or HH:MM:SS)
