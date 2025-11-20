@@ -1,5 +1,6 @@
 import type { step as InngestStep } from "inngest";
 import type OpenAI from "openai";
+import { formatTimestamp } from "@/lib/format";
 import { openai } from "../../lib/openai-client";
 import type { TranscriptWithExtras } from "../../types/assemblyai";
 
@@ -7,30 +8,6 @@ type YouTubeTimestamp = {
   timestamp: string;
   description: string;
 };
-
-/**
- * Format seconds into YouTube timestamp format
- * - MM:SS for times under 1 hour (e.g., "02:57")
- * - H:MM:SS for times over 1 hour (e.g., "1:11:22", no leading zero on hours)
- */
-function formatYouTubeTimestamp(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    // H:MM:SS format (no leading zero on hours)
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(
-      secs,
-    ).padStart(2, "0")}`;
-  } else {
-    // MM:SS format
-    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(
-      2,
-      "0",
-    )}`;
-  }
-}
 
 export async function generateYouTubeTimestamps(
   step: typeof InngestStep,
@@ -147,7 +124,7 @@ Example:
 
   // Format timestamps in YouTube format
   const youtubeTimestamps = aiTimestamps.map((item) => ({
-    timestamp: formatYouTubeTimestamp(item.timestamp),
+    timestamp: formatTimestamp(item.timestamp, { padHours: false }),
     description: item.description,
   }));
 

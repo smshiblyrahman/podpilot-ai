@@ -1,14 +1,12 @@
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { convex } from "@/lib/convex-client";
 import type {
   Hashtags,
   SocialPosts,
   Summary,
   Titles,
 } from "../../schemas/ai-outputs";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 
 type KeyMoment = {
   time: string;
@@ -31,16 +29,9 @@ type GeneratedContent = {
   youtubeTimestamps: YouTubeTimestamp[];
 };
 
-type PublishFunction = (args: {
-  channel: string;
-  topic: string;
-  data: Record<string, unknown>;
-}) => Promise<Record<string, unknown>>;
-
 export async function saveResultsToConvex(
   projectId: Id<"projects">,
   results: GeneratedContent,
-  _publish: PublishFunction
 ): Promise<void> {
   await convex.mutation(api.projects.saveGeneratedContent, {
     projectId,

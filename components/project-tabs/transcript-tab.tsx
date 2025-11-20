@@ -1,8 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface TranscriptTabProps {
@@ -13,18 +11,10 @@ interface TranscriptTabProps {
       start: number;
       confidence: number;
     }[];
-    segments: {
-      id: number | string;
-      text: string;
-      start: number;
-    }[];
-  };
-  captions?: {
-    srtUrl: string;
   };
 }
 
-export function TranscriptTab({ transcript, captions }: TranscriptTabProps) {
+export function TranscriptTab({ transcript }: TranscriptTabProps) {
   return (
     <div className="space-y-4">
       {/* Speaker View (if available) */}
@@ -72,40 +62,6 @@ export function TranscriptTab({ transcript, captions }: TranscriptTabProps) {
           </CardContent>
         </Card>
       )}
-
-      {/* Full Transcript */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Full Transcript</CardTitle>
-            {captions && (
-              <Button asChild size="sm" variant="outline">
-                <a
-                  href={captions.srtUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download SRT
-                </a>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {transcript.segments.map((segment) => (
-              <div key={segment.id} className="flex gap-4">
-                <Badge variant="outline" className="h-fit">
-                  {new Date(segment.start * 1000).toISOString().substr(11, 8)}
-                </Badge>
-                <p className="flex-1">{segment.text}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

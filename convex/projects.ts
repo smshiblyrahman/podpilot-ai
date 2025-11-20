@@ -2,13 +2,6 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
-// ============================================================================
-// MUTATIONS
-// ============================================================================
-
-/**
- * Create a new project when a file is uploaded
- */
 export const createProject = mutation({
   args: {
     userId: v.string(),
@@ -49,9 +42,6 @@ export const createProject = mutation({
   },
 });
 
-/**
- * Update the overall project status
- */
 export const updateProjectStatus = mutation({
   args: {
     projectId: v.id("projects"),
@@ -59,7 +49,7 @@ export const updateProjectStatus = mutation({
       v.literal("uploaded"),
       v.literal("processing"),
       v.literal("completed"),
-      v.literal("failed"),
+      v.literal("failed")
     ),
   },
   handler: async (ctx, args) => {
@@ -68,7 +58,6 @@ export const updateProjectStatus = mutation({
       updatedAt: Date.now(),
     };
 
-    // Set completedAt timestamp when project is completed
     if (args.status === "completed") {
       updates.completedAt = Date.now();
     }
@@ -77,9 +66,6 @@ export const updateProjectStatus = mutation({
   },
 });
 
-/**
- * Update the status of a specific job/step
- */
 export const updateJobStatus = mutation({
   args: {
     projectId: v.id("projects"),
@@ -91,14 +77,14 @@ export const updateJobStatus = mutation({
       v.literal("social"),
       v.literal("titles"),
       v.literal("hashtags"),
-      v.literal("youtubeTimestamps"),
+      v.literal("youtubeTimestamps")
     ),
     status: v.union(
       v.literal("pending"),
       v.literal("running"),
       v.literal("completed"),
       v.literal("failed"),
-      v.literal("skipped"),
+      v.literal("skipped")
     ),
   },
   handler: async (ctx, args) => {
@@ -117,9 +103,6 @@ export const updateJobStatus = mutation({
   },
 });
 
-/**
- * Save the transcript result
- */
 export const saveTranscript = mutation({
   args: {
     projectId: v.id("projects"),
@@ -137,10 +120,10 @@ export const saveTranscript = mutation({
                 word: v.string(),
                 start: v.number(),
                 end: v.number(),
-              }),
-            ),
+              })
+            )
           ),
-        }),
+        })
       ),
       speakers: v.optional(
         v.array(
@@ -150,8 +133,8 @@ export const saveTranscript = mutation({
             end: v.number(),
             text: v.string(),
             confidence: v.number(),
-          }),
-        ),
+          })
+        )
       ),
     }),
   },
@@ -163,10 +146,6 @@ export const saveTranscript = mutation({
   },
 });
 
-/**
- * Save generated content from parallel processing steps
- * This is called after all parallel jobs complete
- */
 export const saveGeneratedContent = mutation({
   args: {
     projectId: v.id("projects"),
@@ -177,8 +156,8 @@ export const saveGeneratedContent = mutation({
           timestamp: v.number(),
           text: v.string(),
           description: v.string(),
-        }),
-      ),
+        })
+      )
     ),
     summary: v.optional(
       v.object({
@@ -186,7 +165,7 @@ export const saveGeneratedContent = mutation({
         bullets: v.array(v.string()),
         insights: v.array(v.string()),
         tldr: v.string(),
-      }),
+      })
     ),
     socialPosts: v.optional(
       v.object({
@@ -196,7 +175,7 @@ export const saveGeneratedContent = mutation({
         tiktok: v.string(),
         youtube: v.string(),
         facebook: v.string(),
-      }),
+      })
     ),
     titles: v.optional(
       v.object({
@@ -204,7 +183,7 @@ export const saveGeneratedContent = mutation({
         youtubeLong: v.array(v.string()),
         podcastTitles: v.array(v.string()),
         seoKeywords: v.array(v.string()),
-      }),
+      })
     ),
     hashtags: v.optional(
       v.object({
@@ -213,15 +192,15 @@ export const saveGeneratedContent = mutation({
         tiktok: v.array(v.string()),
         linkedin: v.array(v.string()),
         twitter: v.array(v.string()),
-      }),
+      })
     ),
     youtubeTimestamps: v.optional(
       v.array(
         v.object({
           timestamp: v.string(),
           description: v.string(),
-        }),
-      ),
+        })
+      )
     ),
   },
   handler: async (ctx, args) => {
@@ -234,9 +213,6 @@ export const saveGeneratedContent = mutation({
   },
 });
 
-/**
- * Update processing metrics
- */
 export const updateMetrics = mutation({
   args: {
     projectId: v.id("projects"),
@@ -252,7 +228,6 @@ export const updateMetrics = mutation({
       throw new Error("Project not found");
     }
 
-    // Merge with existing metrics
     const updatedMetrics = {
       ...project.metrics,
       ...args.metrics,
@@ -265,9 +240,6 @@ export const updateMetrics = mutation({
   },
 });
 
-/**
- * Record an error that occurred during processing
- */
 export const recordError = mutation({
   args: {
     projectId: v.id("projects"),
@@ -289,13 +261,6 @@ export const recordError = mutation({
   },
 });
 
-// ============================================================================
-// QUERIES
-// ============================================================================
-
-/**
- * Get a single project by ID
- */
 export const getProject = query({
   args: {
     projectId: v.id("projects"),
@@ -305,9 +270,6 @@ export const getProject = query({
   },
 });
 
-/**
- * List all projects for a user with pagination
- */
 export const listUserProjects = query({
   args: {
     userId: v.string(),
@@ -315,7 +277,7 @@ export const listUserProjects = query({
       v.object({
         numItems: v.number(),
         cursor: v.optional(v.string()),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -330,95 +292,5 @@ export const listUserProjects = query({
       numItems,
       cursor: args.paginationOpts?.cursor ?? null,
     });
-  },
-});
-
-/**
- * Get projects by status for a user
- */
-export const getProjectsByStatus = query({
-  args: {
-    userId: v.string(),
-    status: v.union(
-      v.literal("uploaded"),
-      v.literal("processing"),
-      v.literal("completed"),
-      v.literal("failed"),
-    ),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("projects")
-      .withIndex("by_user_and_status", (q) =>
-        q.eq("userId", args.userId).eq("status", args.status),
-      )
-      .order("desc")
-      .collect();
-  },
-});
-
-/**
- * Get processing metrics/analytics for a user
- */
-export const getProcessingMetrics = query({
-  args: {
-    userId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const projects = await ctx.db
-      .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    // Aggregate metrics
-    const totalProjects = projects.length;
-    let completedProjects = 0;
-    let failedProjects = 0;
-    let processingProjects = 0;
-    let totalProcessingTime = 0;
-    let totalTranscriptionTokens = 0;
-    let totalGenerationTokens = 0;
-
-    for (const project of projects) {
-      if (project.status === "completed") completedProjects++;
-      if (project.status === "failed") failedProjects++;
-      if (project.status === "processing") processingProjects++;
-
-      if (project.metrics) {
-        totalProcessingTime += project.metrics.totalProcessingTime || 0;
-        totalTranscriptionTokens += project.metrics.transcriptionTokens || 0;
-        totalGenerationTokens += project.metrics.generationTokens || 0;
-      }
-    }
-
-    return {
-      totalProjects,
-      completedProjects,
-      failedProjects,
-      processingProjects,
-      averageProcessingTime:
-        completedProjects > 0 ? totalProcessingTime / completedProjects : 0,
-      totalTranscriptionTokens,
-      totalGenerationTokens,
-      totalTokens: totalTranscriptionTokens + totalGenerationTokens,
-    };
-  },
-});
-
-/**
- * Get recent projects across all users (admin view)
- */
-export const getRecentProjects = query({
-  args: {
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const limit = args.limit ?? 10;
-
-    return await ctx.db
-      .query("projects")
-      .withIndex("by_created_at")
-      .order("desc")
-      .take(limit);
   },
 });

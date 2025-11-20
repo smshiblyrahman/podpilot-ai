@@ -10,18 +10,9 @@ import { Button } from "@/components/ui/button";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { UploadProgress } from "@/components/upload-progress";
 import { estimateDurationFromSize, getAudioDuration } from "@/lib/audio-utils";
+import type { UploadStatus } from "@/lib/types";
 
-type UploadStatus = "idle" | "uploading" | "processing" | "completed" | "error";
-
-interface PodcastUploaderProps {
-  compact?: boolean;
-  onUploadComplete?: (projectId: string) => void;
-}
-
-export function PodcastUploader({
-  compact = false,
-  onUploadComplete,
-}: PodcastUploaderProps) {
+export function PodcastUploader() {
   const router = useRouter();
   const { userId } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -84,13 +75,7 @@ export function PodcastUploader({
       toast.success("Upload completed! Processing your podcast...");
       setUploadStatus("completed");
 
-      if (onUploadComplete) {
-        onUploadComplete(projectId);
-      } else {
-        setTimeout(() => {
-          router.push(`/dashboard/projects/${projectId}`);
-        }, 1000);
-      }
+      router.push(`/dashboard/projects/${projectId}`);
     } catch (err) {
       console.error("Upload error:", err);
       setUploadStatus("error");
@@ -108,7 +93,7 @@ export function PodcastUploader({
   };
 
   return (
-    <div className={compact ? "space-y-4" : "space-y-6"}>
+    <div className="space-y-6">
       {!selectedFile && uploadStatus === "idle" && (
         <UploadDropzone
           onFileSelect={handleFileSelect}

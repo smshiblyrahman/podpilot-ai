@@ -19,8 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useProjectRealtime } from "@/hooks/use-project-realtime";
-
-type PhaseStatus = "pending" | "running" | "completed";
+import { calculateGenerationStatus } from "@/lib/status-utils";
+import type { PhaseStatus } from "@/lib/types";
 
 export default function ProjectDetailPage({
   params,
@@ -46,7 +46,8 @@ export default function ProjectDetailPage({
     setLocalGenerationStatus(generationStatus);
   }, [transcriptionStatus, generationStatus]);
 
-  // Fallback to Convex job status if no realtime updates
+  // Tutorial: Fallback to Convex job status when realtime updates aren't available
+  // This ensures the UI always shows accurate status even if realtime connection drops
   useEffect(() => {
     if (hasRealtimeUpdates || !project) return;
 
@@ -56,27 +57,8 @@ export default function ProjectDetailPage({
       setLocalTranscriptionStatus("completed");
     }
 
-    const generationJobs = [
-      project.jobStatus?.keyMoments,
-      project.jobStatus?.summary,
-      project.jobStatus?.social,
-      project.jobStatus?.titles,
-      project.jobStatus?.hashtags,
-      project.jobStatus?.youtubeTimestamps,
-    ];
-
-    const anyGenerationRunning = generationJobs.some(
-      (job) => job === "running",
-    );
-    const allGenerationCompleted = generationJobs.every(
-      (job) => job === "completed",
-    );
-
-    if (allGenerationCompleted) {
-      setLocalGenerationStatus("completed");
-    } else if (anyGenerationRunning) {
-      setLocalGenerationStatus("running");
-    }
+    const generationStatus = calculateGenerationStatus(project.jobStatus);
+    setLocalGenerationStatus(generationStatus);
   }, [project, hasRealtimeUpdates]);
 
   if (!project) {
@@ -223,10 +205,7 @@ export default function ProjectDetailPage({
             <TabsContent value="transcript" className="space-y-4">
               <TabContent isLoading={showGenerating} data={project.transcript}>
                 {project.transcript && (
-                  <TranscriptTab
-                    transcript={project.transcript}
-                    captions={project.captions}
-                  />
+                  <TranscriptTab transcript={project.transcript} />
                 )}
               </TabContent>
             </TabsContent>

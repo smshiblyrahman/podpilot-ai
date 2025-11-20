@@ -82,3 +82,4 @@ export const hashtagsSchema = z.object({
 });
 
 export type Hashtags = z.infer<typeof hashtagsSchema>;
+

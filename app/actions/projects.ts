@@ -1,11 +1,9 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { inngest } from "@/inngest/client";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import { convex } from "@/lib/convex-client";
 
 interface CreateProjectInput {
   fileUrl: string;

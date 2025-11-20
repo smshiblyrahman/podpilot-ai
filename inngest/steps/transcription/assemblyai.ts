@@ -1,8 +1,7 @@
 import { AssemblyAI } from "assemblyai";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { PublishFunction } from "../../lib/realtime";
+import { convex } from "@/lib/convex-client";
 import type {
   AssemblyAIChapter,
   AssemblyAISegment,
@@ -11,7 +10,6 @@ import type {
   TranscriptWithExtras,
 } from "../../types/assemblyai";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
 const assemblyai = new AssemblyAI({
   apiKey: process.env.ASSEMBLYAI_API_KEY || "",
 });
@@ -19,7 +17,6 @@ const assemblyai = new AssemblyAI({
 export async function transcribeWithAssemblyAI(
   audioUrl: string,
   projectId: Id<"projects">,
-  _publish: PublishFunction,
 ): Promise<TranscriptWithExtras> {
   await convex.mutation(api.projects.updateJobStatus, {
     projectId,

@@ -3,9 +3,8 @@
 import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import type { PhaseStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type PhaseStatus = "pending" | "running" | "completed";
 
 interface PhaseCardProps {
   icon: React.ReactNode;

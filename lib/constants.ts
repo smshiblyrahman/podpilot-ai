@@ -30,20 +30,15 @@ export const ALLOWED_AUDIO_TYPES = [
   "audio/3gpp2",
 ];
 
-export const ALLOWED_AUDIO_EXTENSIONS = [
-  ".mp3",
-  ".m4a",
-  ".wav",
-  ".wave",
-  ".aac",
-  ".ogg",
-  ".oga",
-  ".opus",
-  ".webm",
-  ".flac",
-  ".3gp",
-  ".3g2",
-];
+// Progress and timing constants
+export const PROGRESS_CAP_PERCENTAGE = 95;
+export const ANIMATION_INTERVAL_MS = 4000;
+export const PROGRESS_UPDATE_INTERVAL_MS = 1000;
+
+// Time conversion constants
+export const MS_PER_MINUTE = 60000;
+export const MS_PER_HOUR = 3600000;
+export const MS_PER_DAY = 86400000;
 
 export interface GenerationOutput {
   name: string;

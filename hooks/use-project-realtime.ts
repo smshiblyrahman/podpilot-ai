@@ -3,8 +3,7 @@
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { REALTIME_TOPICS } from "@/inngest/lib/realtime-topics";
-
-type PhaseStatus = "pending" | "running" | "completed";
+import type { PhaseStatus } from "@/lib/types";
 
 interface UseProjectRealtimeResult {
   transcriptionStatus: PhaseStatus;

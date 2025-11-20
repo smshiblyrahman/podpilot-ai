@@ -4,13 +4,14 @@ import { CheckCircle2, Clock, FileAudio, Loader2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatDuration, formatFileSize } from "@/lib/format";
+import type { UploadStatus } from "@/lib/types";
 
 interface UploadProgressProps {
   fileName: string;
   fileSize: number;
   fileDuration?: number;
   progress: number;
-  status: "idle" | "uploading" | "processing" | "completed" | "error";
+  status: UploadStatus;
   error?: string;
 }
 

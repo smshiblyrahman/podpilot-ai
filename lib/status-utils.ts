@@ -12,12 +12,32 @@ import {
 import type { Doc } from "@/convex/_generated/dataModel";
 
 export type ProjectStatus = Doc<"projects">["status"];
+export type JobStatus = Doc<"projects">["jobStatus"];
 
-/**
- * Get the appropriate badge variant for a project status
- */
+// Tutorial: Helper to calculate generation status from individual job statuses
+// This centralizes the logic for determining if content generation is running or completed
+export function calculateGenerationStatus(
+  jobStatus: JobStatus
+): "pending" | "running" | "completed" {
+  const generationJobs = [
+    jobStatus.keyMoments,
+    jobStatus.summary,
+    jobStatus.social,
+    jobStatus.titles,
+    jobStatus.hashtags,
+    jobStatus.youtubeTimestamps,
+  ];
+
+  const anyRunning = generationJobs.some((job) => job === "running");
+  const allCompleted = generationJobs.every((job) => job === "completed");
+
+  if (allCompleted) return "completed";
+  if (anyRunning) return "running";
+  return "pending";
+}
+
 export function getStatusVariant(
-  status: ProjectStatus,
+  status: ProjectStatus
 ): "default" | "secondary" | "destructive" {
   switch (status) {
     case "uploaded":
@@ -31,9 +51,6 @@ export function getStatusVariant(
   }
 }
 
-/**
- * Get the appropriate icon component for a project status
- */
 export function getStatusIcon(status: ProjectStatus): LucideIcon {
   switch (status) {
     case "uploaded":

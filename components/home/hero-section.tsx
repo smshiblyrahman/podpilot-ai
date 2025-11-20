@@ -32,7 +32,7 @@ export async function HeroSection() {
 
         {isSignedIn ? (
           <div className="space-y-4">
-            <PodcastUploader compact />
+            <PodcastUploader />
             <div className="text-center">
               <Link href="/dashboard/projects">
                 <Button variant="outline">View All Projects</Button>

@@ -1,17 +1,20 @@
 "use client";
 
 import { ChevronDown, FileText, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { GenerationOutputItem } from "@/components/processing-flow/generation-output-item";
 import { PhaseCard } from "@/components/processing-flow/phase-card";
 import { Badge } from "@/components/ui/badge";
-import { GENERATION_OUTPUTS } from "@/lib/constants";
+import {
+  ANIMATION_INTERVAL_MS,
+  GENERATION_OUTPUTS,
+  PROGRESS_CAP_PERCENTAGE,
+} from "@/lib/constants";
 import {
   estimateAssemblyAITime,
   formatTimeRange,
 } from "@/lib/processing-time-estimator";
-
-type PhaseStatus = "pending" | "running" | "completed";
+import type { PhaseStatus } from "@/lib/types";
 
 interface ProcessingFlowProps {
   transcriptionStatus: PhaseStatus;
@@ -31,10 +34,15 @@ export function ProcessingFlow({
   const isGenerating = generationStatus === "running";
   const generationComplete = generationStatus === "completed";
 
-  const timeEstimate = estimateAssemblyAITime(fileDuration);
-  const timeRangeText = formatTimeRange(
-    timeEstimate.bestCase,
-    timeEstimate.conservative,
+  // Memoize expensive calculations
+  const timeEstimate = useMemo(
+    () => estimateAssemblyAITime(fileDuration),
+    [fileDuration],
+  );
+
+  const timeRangeText = useMemo(
+    () => formatTimeRange(timeEstimate.bestCase, timeEstimate.conservative),
+    [timeEstimate.bestCase, timeEstimate.conservative],
   );
 
   const [transcriptionProgress, setTranscriptionProgress] = useState(0);
@@ -49,7 +57,7 @@ export function ProcessingFlow({
     const updateProgress = () => {
       const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
       const progress = (elapsedSeconds / timeEstimate.conservative) * 100;
-      setTranscriptionProgress(Math.min(95, progress));
+      setTranscriptionProgress(Math.min(PROGRESS_CAP_PERCENTAGE, progress));
     };
 
     updateProgress();
@@ -65,23 +73,23 @@ export function ProcessingFlow({
 
     const interval = setInterval(() => {
       setCurrentOutputIndex((prev) => (prev + 1) % GENERATION_OUTPUTS.length);
-    }, 4000);
+    }, ANIMATION_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  const getTranscriptionDescription = () => {
+  const getTranscriptionDescription = useCallback(() => {
     if (isTranscribing) return "Converting audio to text with AssemblyAI...";
     if (transcriptionComplete) return "Transcription complete!";
     return "Preparing transcription...";
-  };
+  }, [isTranscribing, transcriptionComplete]);
 
-  const getGenerationDescription = () => {
+  const getGenerationDescription = useCallback(() => {
     if (!transcriptionComplete) return "Waiting for transcription...";
     if (isGenerating) return "Generating 6 AI outputs in parallel...";
     if (generationComplete) return "All content generated!";
     return "Starting generation...";
-  };
+  }, [transcriptionComplete, isGenerating, generationComplete]);
 
   return (
     <div className="space-y-6">

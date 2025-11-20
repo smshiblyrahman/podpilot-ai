@@ -26,23 +26,3 @@ export async function withAuth(): Promise<{ userId: string }> {
   }
   return { userId };
 }
-
-/**
- * Wrapper for API route handlers with consistent error handling
- */
-export async function apiHandler<T>(
-  handler: () => Promise<T>,
-): Promise<NextResponse> {
-  try {
-    const result = await handler();
-    return apiResponse(result);
-  } catch (error) {
-    if (error instanceof NextResponse) {
-      return error;
-    }
-    console.error("API error:", error);
-    return apiError(
-      error instanceof Error ? error.message : "Internal server error",
-    );
-  }
-}

@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import type { Doc } from "@/convex/_generated/dataModel";
+import {
+  PROGRESS_CAP_PERCENTAGE,
+  PROGRESS_UPDATE_INTERVAL_MS,
+} from "@/lib/constants";
 import { estimateAssemblyAITime } from "@/lib/processing-time-estimator";
 
 interface CompactProgressProps {
@@ -35,22 +39,21 @@ export function CompactProgress({
 
   useEffect(() => {
     if (!isTranscribing) {
-      // For content generation, show percentage based on completed steps
       const stepProgress = (completedSteps / totalSteps) * 100;
       setProgress(stepProgress);
       return;
     }
 
-    // For transcription, update progress based on elapsed time
+    // Tutorial: Calculate progress based on elapsed time vs estimated completion time
     const updateProgress = () => {
       const estimate = estimateAssemblyAITime(fileDuration);
       const elapsed = Math.floor((Date.now() - createdAt) / 1000);
       const calculatedProgress = (elapsed / estimate.conservative) * 100;
-      setProgress(Math.min(95, calculatedProgress));
+      setProgress(Math.min(PROGRESS_CAP_PERCENTAGE, calculatedProgress));
     };
 
     updateProgress();
-    const interval = setInterval(updateProgress, 1000);
+    const interval = setInterval(updateProgress, PROGRESS_UPDATE_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [isTranscribing, createdAt, fileDuration, completedSteps, totalSteps]);
 

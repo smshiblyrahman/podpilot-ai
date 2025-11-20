@@ -1,4 +1,3 @@
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { inngest } from "@/inngest/client";
 import { REALTIME_TOPICS } from "../lib/realtime-topics";
@@ -10,21 +9,16 @@ import { generateTitles } from "../steps/ai-generation/titles";
 import { generateYouTubeTimestamps } from "../steps/ai-generation/youtube-timestamps";
 import { saveResultsToConvex } from "../steps/persistence/save-to-convex";
 import { transcribeWithAssemblyAI } from "../steps/transcription/assemblyai";
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+import { convex } from "@/lib/convex-client";
 
 export const podcastProcessor = inngest.createFunction(
   {
     id: "podcast-processor",
-    optimizeParallelism: true, // Optimize parallel AI generation steps
+    optimizeParallelism: true,
   },
   { event: "podcast/uploaded" },
   async ({ event, step, publish }) => {
     const { projectId, fileUrl } = event.data;
-
-    // =======================================================================
-    // INITIALIZATION
-    // =======================================================================
 
     await step.run("update-status-processing", async () => {
       await convex.mutation(api.projects.updateProjectStatus, {
@@ -33,10 +27,7 @@ export const podcastProcessor = inngest.createFunction(
       });
     });
 
-    // =======================================================================
-    // PHASE 1: Transcription
-    // =======================================================================
-
+    // Tutorial: Publish realtime event to notify UI that transcription is starting
     await publish({
       channel: `project:${projectId}`,
       topic: REALTIME_TOPICS.TRANSCRIPTION_START,
@@ -44,7 +35,7 @@ export const podcastProcessor = inngest.createFunction(
     });
 
     const transcript = await step.run("transcribe-audio", () =>
-      transcribeWithAssemblyAI(fileUrl, projectId, publish),
+      transcribeWithAssemblyAI(fileUrl, projectId)
     );
 
     await publish({
@@ -53,10 +44,8 @@ export const podcastProcessor = inngest.createFunction(
       data: { message: "Transcription complete!" },
     });
 
-    // =======================================================================
-    // PHASE 2: AI Content Generation (6 outputs in parallel)
-    // =======================================================================
-
+    // Tutorial: Run 6 AI generation tasks in parallel using Promise.all
+    // This significantly reduces total processing time vs sequential execution
     await publish({
       channel: `project:${projectId}`,
       topic: REALTIME_TOPICS.GENERATION_START,
@@ -71,7 +60,7 @@ export const podcastProcessor = inngest.createFunction(
       hashtags,
       youtubeTimestamps,
     ] = await Promise.all([
-      generateKeyMoments(step, transcript),
+      generateKeyMoments(transcript),
       generateSummary(step, transcript),
       generateSocialPosts(step, transcript),
       generateTitles(step, transcript),
@@ -85,25 +74,17 @@ export const podcastProcessor = inngest.createFunction(
       data: { message: "All AI content generated!" },
     });
 
-    // =======================================================================
-    // SAVE RESULTS
-    // =======================================================================
-
     await step.run("save-results-to-convex", () =>
-      saveResultsToConvex(
-        projectId,
-        {
-          keyMoments,
-          summary,
-          socialPosts,
-          titles,
-          hashtags,
-          youtubeTimestamps,
-        },
-        publish,
-      ),
+      saveResultsToConvex(projectId, {
+        keyMoments,
+        summary,
+        socialPosts,
+        titles,
+        hashtags,
+        youtubeTimestamps,
+      })
     );
 
     return { success: true, projectId };
-  },
+  }
 );
