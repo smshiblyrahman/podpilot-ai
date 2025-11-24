@@ -12,6 +12,20 @@
 
 Upload your podcast once. Get platform-optimized content for 6 social networks automatically.
 
+
+
+## 👇 IMPORTANT: Use Our Affiliate Links when signing up
+
+**⚠️ Please use our affiliate links below to set up your accounts.**
+
+This is how we keep this content FREE and continue building open-source projects for the community. It costs you nothing extra, but it makes a huge difference for us!
+
+1. **[Clerk](https://go.clerk.com/sonny)** - Authentication & Billing (Free tier available)
+2. **[Inngest](https://innge.st/sonny-2)** - Workflow Orchestration (Free for developers)
+3. **[CodeRabbit](https://coderabbit.link/sonny-nov)** - AI Code Reviews (Optional, for development)
+
+🙏 **Thank you for supporting the channel by using our links!**
+
 ---
 
 ### 📌 Who This Is For
@@ -25,7 +39,7 @@ You've spent hours recording, editing, and producing your podcast. Now you need 
 - Find the best moments for clips
 - Write captions and hashtags
 
-**This app does all of that in 90 seconds.**
+**This app does all of that in seconds.**
 
 ### 🎯 Key Differentiator
 
@@ -38,17 +52,6 @@ Not just transcription. Not just summaries. A complete content distribution syst
 **Parallel AI processing with Inngest (5x faster than sequential)**
 
 Instead of waiting 5 minutes for AI tasks to run one-by-one, we run 6 AI generation jobs simultaneously. Your content is ready in ~90 seconds total.
-
----
-
-## 👇 DO THIS Before You Get Started
-
-Set up your accounts with these services (most have free tiers):
-
-1. **[Clerk](https://go.clerk.com/sonny)** - Authentication & Billing (Free tier available)
-2. **[Inngest](https://innge.st/sonny-2)** - Workflow Orchestration (Free for developers)
-3. **[CodeRabbit](https://coderabbit.link/sonny-nov)** - AI Code Reviews (Optional, for development)
-
 
 ---
 
