@@ -41,3 +41,20 @@ export function getStatusIcon(status: ProjectStatus): LucideIcon {
       return XCircle;
   }
 }
+
+/**
+ * Get human-readable processing phase label for UI display
+ *
+ * @param project - Project document with status and jobStatus
+ * @returns User-friendly label for the current phase
+ */
+export function getProcessingPhaseLabel(project: Doc<"projects">): string {
+  if (project.status !== "processing") return project.status;
+
+  if (project.jobStatus?.transcription === "running") {
+    return "Transcribing";
+  }
+
+  // Generic "Generating" without showing count
+  return "Generating";
+}

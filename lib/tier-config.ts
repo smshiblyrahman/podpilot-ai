@@ -97,3 +97,19 @@ export const PLAN_PRICES: Record<PlanName, string> = {
   pro: "$29/month",
   ultra: "$69/month",
 };
+
+/**
+ * Mapping from feature names to job names for retry/regeneration
+ * Used to consolidate logic across actions and Inngest functions
+ */
+export const FEATURE_TO_JOB_MAP = {
+  [FEATURES.SOCIAL_POSTS]: "socialPosts",
+  [FEATURES.TITLES]: "titles",
+  [FEATURES.HASHTAGS]: "hashtags",
+  [FEATURES.KEY_MOMENTS]: "keyMoments",
+  [FEATURES.YOUTUBE_TIMESTAMPS]: "youtubeTimestamps",
+  [FEATURES.SUMMARY]: "summary",
+} as const;
+
+export type JobName =
+  (typeof FEATURE_TO_JOB_MAP)[keyof typeof FEATURE_TO_JOB_MAP];

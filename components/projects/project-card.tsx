@@ -7,10 +7,13 @@ import { toast } from "sonner";
 import { deleteProjectAction } from "@/app/actions/projects";
 import { CompactProgress } from "@/components/projects/compact-progress";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { formatDuration, formatFileSize, formatSmartDate } from "@/lib/format";
-import { getStatusIcon, getStatusVariant } from "@/lib/status-utils";
+import {
+  getStatusIcon,
+  getStatusVariant,
+  getProcessingPhaseLabel,
+} from "@/lib/status-utils";
 import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
@@ -21,18 +24,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const StatusIcon = getStatusIcon(project.status);
-
-  // Get processing phase for status badge
-  const getProcessingPhase = () => {
-    if (project.status !== "processing") return project.status;
-
-    if (project.jobStatus?.transcription === "running") {
-      return "Transcribing";
-    }
-
-    // Just say "Generating" without the count
-    return "Generating";
-  };
+  const processingPhase = getProcessingPhaseLabel(project);
 
   const handleDelete = async (e: React.MouseEvent) => {
     // Prevent navigation to detail page
@@ -100,7 +92,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                         className={`h-4 w-4 md:h-5 md:w-5 ${project.status === "processing" ? "animate-spin" : ""}`}
                       />
                       <span className="hidden md:inline">
-                        {getProcessingPhase()}
+                        {processingPhase}
                       </span>
                       <span className="md:hidden">
                         {project.status === "processing"

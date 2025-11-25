@@ -7,8 +7,8 @@
  */
 import { api } from "@/convex/_generated/api";
 import { convex } from "@/lib/convex-client";
-import type { PlanName } from "@/lib/tier-config";
-import { FEATURES } from "@/lib/tier-config";
+import type { PlanName, FeatureName } from "@/lib/tier-config";
+import { FEATURE_TO_JOB_MAP } from "@/lib/tier-config";
 import { planHasFeature } from "@/lib/tier-utils";
 import { inngest } from "../client";
 import { generateHashtags } from "../steps/ai-generation/hashtags";
@@ -29,18 +29,17 @@ export const retryJobFunction = inngest.createFunction(
     const currentUserPlan = (currentPlan as PlanName) || "free";
     const originalUserPlan = (originalPlan as PlanName) || "free";
 
-    // Map job names to feature keys
-    const jobToFeature: Record<string, string> = {
-      socialPosts: FEATURES.SOCIAL_POSTS,
-      titles: FEATURES.TITLES,
-      hashtags: FEATURES.HASHTAGS,
-      keyMoments: FEATURES.KEY_MOMENTS,
-      youtubeTimestamps: FEATURES.YOUTUBE_TIMESTAMPS,
-    };
+    // Get feature key from job name using the shared mapping
+    const jobToFeature = Object.fromEntries(
+      Object.entries(FEATURE_TO_JOB_MAP).map(([k, v]) => [v, k])
+    );
 
     // Check if user has access to this feature with current plan
     const featureKey = jobToFeature[job];
-    if (featureKey && !planHasFeature(currentUserPlan, featureKey as any)) {
+    if (
+      featureKey &&
+      !planHasFeature(currentUserPlan, featureKey as FeatureName)
+    ) {
       throw new Error(
         `This feature (${job}) is not available on your current plan. Please upgrade to access it.`
       );

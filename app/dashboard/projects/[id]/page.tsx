@@ -1,18 +1,10 @@
 "use client";
 
-import { useAuth, Protect } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import {
-  AlertCircle,
-  Edit2,
-  Loader2,
-  Save,
-  Trash2,
-  X,
-  Lock,
-} from "lucide-react";
+import { Edit2, Loader2, Save, Trash2, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   deleteProjectAction,
@@ -20,6 +12,10 @@ import {
 } from "@/app/actions/projects";
 import { ProcessingFlow } from "@/components/processing-flow";
 import { TabContent } from "@/components/project-detail/tab-content";
+import {
+  MobileTabItem,
+  DesktopTabTrigger,
+} from "@/components/project-detail/tab-triggers";
 import { ProjectStatusCard } from "@/components/project-status-card";
 import { HashtagsTab } from "@/components/project-tabs/hashtags-tab";
 import { KeyMomentsTab } from "@/components/project-tabs/key-moments-tab";
@@ -34,15 +30,15 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { PhaseStatus } from "@/lib/types";
 import { FEATURES } from "@/lib/tier-config";
+import { PROJECT_TABS } from "@/lib/tab-config";
 
 export default function ProjectDetailPage() {
   const { userId } = useAuth();
@@ -183,7 +179,7 @@ export default function ProjectDetailPage() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold break-words">
+              <h1 className="text-3xl font-bold wrap-break-word">
                 {project.displayName || project.fileName}
               </h1>
             </div>
@@ -254,87 +250,17 @@ export default function ProjectDetailPage() {
             {/* Mobile Dropdown */}
             <div className="glass-card rounded-2xl p-4 mb-6 lg:hidden">
               <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-white font-semibold text-base border-none outline-none focus:ring-2 focus:ring-emerald-300 transition-all h-auto">
+                <SelectTrigger className="w-full px-4 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-teal-400 text-white font-semibold text-base border-none outline-none focus:ring-2 focus:ring-emerald-300 transition-all h-auto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="summary">
-                    <span className="flex items-center gap-2">
-                      Summary
-                      {project.jobErrors?.summary && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="moments">
-                    <span className="flex items-center gap-2">
-                      Key Moments
-                      {project.jobErrors?.keyMoments && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <Protect
-                        feature={FEATURES.KEY_MOMENTS}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="youtube-timestamps">
-                    <span className="flex items-center gap-2">
-                      YouTube Timestamps
-                      {project.jobErrors?.youtubeTimestamps && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <Protect
-                        feature={FEATURES.YOUTUBE_TIMESTAMPS}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="social">
-                    <span className="flex items-center gap-2">
-                      Social Posts
-                      {project.jobErrors?.socialPosts && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <Protect
-                        feature={FEATURES.SOCIAL_POSTS}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="hashtags">
-                    <span className="flex items-center gap-2">
-                      Hashtags
-                      {project.jobErrors?.hashtags && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <Protect
-                        feature={FEATURES.HASHTAGS}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="titles">
-                    <span className="flex items-center gap-2">
-                      Titles
-                      {project.jobErrors?.titles && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <Protect
-                        feature={FEATURES.TITLES}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="speakers">
-                    <span className="flex items-center gap-2">
-                      Speaker Dialogue
-                      <Protect
-                        feature={FEATURES.SPEAKER_DIARIZATION}
-                        fallback={<Lock className="h-3 w-3" />}
-                      />
-                    </span>
-                  </SelectItem>
+                  {PROJECT_TABS.map((tab) => (
+                    <MobileTabItem
+                      key={tab.value}
+                      tab={tab}
+                      project={project}
+                    />
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -342,90 +268,13 @@ export default function ProjectDetailPage() {
             {/* Desktop Tabs */}
             <div className="glass-card rounded-2xl p-2 mb-6 hidden lg:block">
               <TabsList className="flex flex-wrap gap-2 bg-transparent min-w-max w-full">
-                <TabsTrigger
-                  value="summary"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Summary
-                  {project.jobErrors?.summary && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="moments"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Key Moments
-                  {project.jobErrors?.keyMoments && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <Protect
-                    feature={FEATURES.KEY_MOMENTS}
-                    fallback={<Lock className="h-3 w-3" />}
+                {PROJECT_TABS.map((tab) => (
+                  <DesktopTabTrigger
+                    key={tab.value}
+                    tab={tab}
+                    project={project}
                   />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="youtube-timestamps"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  YouTube Timestamps
-                  {project.jobErrors?.youtubeTimestamps && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <Protect
-                    feature={FEATURES.YOUTUBE_TIMESTAMPS}
-                    fallback={<Lock className="h-3 w-3" />}
-                  />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="social"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Social Posts
-                  {project.jobErrors?.socialPosts && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <Protect
-                    feature={FEATURES.SOCIAL_POSTS}
-                    fallback={<Lock className="h-3 w-3" />}
-                  />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="hashtags"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Hashtags
-                  {project.jobErrors?.hashtags && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <Protect
-                    feature={FEATURES.HASHTAGS}
-                    fallback={<Lock className="h-3 w-3" />}
-                  />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="titles"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Titles
-                  {project.jobErrors?.titles && (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <Protect
-                    feature={FEATURES.TITLES}
-                    fallback={<Lock className="h-3 w-3" />}
-                  />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="speakers"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-400 data-[state=active]:text-white transition-all font-semibold whitespace-nowrap"
-                >
-                  Speaker Dialogue
-                  <Protect
-                    feature={FEATURES.SPEAKER_DIARIZATION}
-                    fallback={<Lock className="h-3 w-3" />}
-                  />
-                </TabsTrigger>
+                ))}
               </TabsList>
             </div>
 
@@ -434,12 +283,11 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.summary}
                 error={project.jobErrors?.summary}
+                projectId={projectId}
+                jobName="summary"
+                emptyMessage="No summary available"
               >
-                <SummaryTab
-                  projectId={projectId}
-                  summary={project.summary}
-                  error={project.jobErrors?.summary}
-                />
+                <SummaryTab summary={project.summary} />
               </TabContent>
             </TabsContent>
 
@@ -448,12 +296,13 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.keyMoments}
                 error={project.jobErrors?.keyMoments}
+                projectId={projectId}
+                feature={FEATURES.KEY_MOMENTS}
+                featureName="Key Moments"
+                jobName="keyMoments"
+                emptyMessage="No key moments detected"
               >
-                <KeyMomentsTab
-                  projectId={projectId}
-                  keyMoments={project.keyMoments}
-                  error={project.jobErrors?.keyMoments}
-                />
+                <KeyMomentsTab keyMoments={project.keyMoments} />
               </TabContent>
             </TabsContent>
 
@@ -462,12 +311,13 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.youtubeTimestamps}
                 error={project.jobErrors?.youtubeTimestamps}
+                projectId={projectId}
+                feature={FEATURES.YOUTUBE_TIMESTAMPS}
+                featureName="YouTube Timestamps"
+                jobName="youtubeTimestamps"
+                emptyMessage="No YouTube timestamps available"
               >
-                <YouTubeTimestampsTab
-                  projectId={projectId}
-                  timestamps={project.youtubeTimestamps}
-                  error={project.jobErrors?.youtubeTimestamps}
-                />
+                <YouTubeTimestampsTab timestamps={project.youtubeTimestamps} />
               </TabContent>
             </TabsContent>
 
@@ -476,12 +326,13 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.socialPosts}
                 error={project.jobErrors?.socialPosts}
+                projectId={projectId}
+                feature={FEATURES.SOCIAL_POSTS}
+                featureName="Social Posts"
+                jobName="socialPosts"
+                emptyMessage="No social posts available"
               >
-                <SocialPostsTab
-                  projectId={projectId}
-                  socialPosts={project.socialPosts}
-                  error={project.jobErrors?.socialPosts}
-                />
+                <SocialPostsTab socialPosts={project.socialPosts} />
               </TabContent>
             </TabsContent>
 
@@ -490,12 +341,13 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.hashtags}
                 error={project.jobErrors?.hashtags}
+                projectId={projectId}
+                feature={FEATURES.HASHTAGS}
+                featureName="Hashtags"
+                jobName="hashtags"
+                emptyMessage="No hashtags available"
               >
-                <HashtagsTab
-                  projectId={projectId}
-                  hashtags={project.hashtags}
-                  error={project.jobErrors?.hashtags}
-                />
+                <HashtagsTab hashtags={project.hashtags} />
               </TabContent>
             </TabsContent>
 
@@ -504,12 +356,13 @@ export default function ProjectDetailPage() {
                 isLoading={showGenerating}
                 data={project.titles}
                 error={project.jobErrors?.titles}
+                projectId={projectId}
+                feature={FEATURES.TITLES}
+                featureName="AI Title Suggestions"
+                jobName="titles"
+                emptyMessage="No titles available"
               >
-                <TitlesTab
-                  projectId={projectId}
-                  titles={project.titles}
-                  error={project.jobErrors?.titles}
-                />
+                <TitlesTab titles={project.titles} />
               </TabContent>
             </TabsContent>
 

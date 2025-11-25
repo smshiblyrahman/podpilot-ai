@@ -19,7 +19,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 // Removed getUserPlan - using Clerk's has() directly per docs
 import { convex } from "@/lib/convex-client";
 import { api } from "@/convex/_generated/api";
-import { PLAN_FEATURES } from "@/lib/tier-config";
+import { PLAN_FEATURES, FEATURE_TO_JOB_MAP } from "@/lib/tier-config";
 import type { RetryableJob } from "./retry-job";
 
 /**
@@ -66,27 +66,19 @@ export async function generateMissingFeatures(projectId: Id<"projects">) {
   // Get all features available in current plan
   const availableFeatures = PLAN_FEATURES[currentPlan];
 
-  // Map feature names to job names and check what's missing
-  const featureToJob: Record<string, RetryableJob> = {
-    social_posts: "socialPosts",
-    titles: "titles",
-    hashtags: "hashtags",
-    key_moments: "keyMoments",
-    youtube_timestamps: "youtubeTimestamps",
-  };
-
   const missingJobs: RetryableJob[] = [];
 
   // Check which features are available but not yet generated
   for (const feature of availableFeatures) {
-    const jobName = featureToJob[feature];
+    const jobName =
+      FEATURE_TO_JOB_MAP[feature as keyof typeof FEATURE_TO_JOB_MAP];
     if (!jobName) continue; // Skip transcription and summary (always present)
 
     // Check if this data exists in the project
     const hasData = Boolean(project[jobName as keyof typeof project]);
 
     if (!hasData) {
-      missingJobs.push(jobName);
+      missingJobs.push(jobName as RetryableJob);
     }
   }
 
