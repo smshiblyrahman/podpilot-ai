@@ -121,8 +121,7 @@ If you're interested in using this project for:
 Please reach out to discuss licensing options:
 
 - **GitHub Issues**: Open an issue tagged `[Commercial Inquiry]`
-- **PAPAFAM Discord**: Message me directly in the community
-- **Email**: [Include your contact email here]
+- **Email**: smshiblyr@gmail.com
 
 I'm flexible and happy to work with developers, startups, and agencies to find a licensing structure that fits your needs.
 
@@ -216,8 +215,7 @@ If you're unsure whether your use case is permitted under this license:
 
 1. **Check the examples above** - Most common scenarios are covered
 2. **Ask in GitHub Issues** - Create an issue with the `[License Question]` tag
-3. **Join PAPAFAM Discord** - Ask in the community channel
-4. **Reach out directly** - For commercial inquiries or specific scenarios
+3. **Reach out directly** - Email smshiblyr@gmail.com for commercial inquiries or specific scenarios
 
 **When in doubt, ask!** I'm happy to clarify and work with you to find a solution.
 
@@ -227,7 +225,7 @@ If you're unsure whether your use case is permitted under this license:
 
 **License Version**: CC BY-NC 4.0
 
-**Project**: AI Podcast SaaS
+**Project**: PodPilot AI
 
-**Repository**: [Your Repository URL]
+**Repository**: https://github.com/smshiblyrahman/podpilot-ai
 

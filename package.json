@@ -1,7 +1,15 @@
 {
-  "name": "ai-podcast-saas-inngest-coderabbit-clerk",
+  "name": "podpilot-ai",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "S.M. Shibly Rahman",
+    "email": "smshiblyr@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smshiblyrahman/podpilot-ai.git"
+  },
   "scripts": {
     "dev": "next dev & convex dev",
     "build": "next build",
