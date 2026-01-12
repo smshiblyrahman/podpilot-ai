@@ -1,6 +1,6 @@
 # PodPilot AI
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Convex](https://img.shields.io/badge/Convex-Database-orange)
 ![Clerk](https://img.shields.io/badge/Clerk-Auth-blue)
@@ -611,34 +611,11 @@ Want to level up this project? Here are some advanced features you can build:
 
 ## 📄 License
 
-This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+This project is licensed under the **MIT License**.
 
-### You CAN:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.
 
-- ✅ Use this code for **personal learning** and education
-- ✅ Modify and adapt the code for your own projects
-- ✅ Share the code with others (with attribution)
-- ✅ Use it in your **portfolio** (non-commercial showcase)
-- ✅ Fork, clone, and experiment with the codebase
-
-### You CANNOT:
-
-- ❌ Use this code for **commercial purposes** (selling, SaaS, client work)
-- ❌ Sell this application or derivatives of it
-- ❌ Remove attribution to the original author
-- ❌ Relicense the code under different terms
-
-### For Commercial Licensing
-
-Interested in using this project commercially? I offer flexible licensing options:
-
-- **Startup License** - For early-stage companies (<$100k revenue)
-- **Enterprise License** - For established businesses
-- **White-label License** - Full customization rights for agencies
-
-**Contact:** Open an issue on GitHub or reach out at smshiblyr@gmail.com
-
-Full license text: [LICENSE.md](./LICENSE.md)
+See the [LICENSE.md](./LICENSE.md) file for the full license text.
 
 ---
 
